@@ -1,823 +1,620 @@
 <!DOCTYPE html>
-<html lang="de" class="h-full antialiased dark">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#020617">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>AI Central - Pro Edition</title>
-
-    <!-- Tailwind CSS (via Skript für Custom Config) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: { brand: { 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5' } },
-                    animation: { 'fade-in': 'fadeIn 0.2s ease-out', 'slide-up': 'slideUp 0.3s ease-out' },
-                    keyframes: {
-                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- Markdown Parser (Marked.js) & Syntax Highlighting (Highlight.js) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stark VARG Full-Screen Dashboard</title>
+    <!-- Stark VARG Style Font (Teko & Rajdhani) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Icons (Lucide) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-        /* iPad & iOS Safari Fixes */
-        body { 
-            height: 100dvh; 
-            display: flex; 
-            overflow: hidden; 
-            background-color: #020617; /* Tailwind slate-950 */
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
+        :root {
+            --bg-dark: #090b10;
+            --text-main: #ffffff;
+            --text-muted: #64748b;
+            --rpm-green: #00ff66;
+            --rpm-yellow: #ffcc00;
+            --rpm-red: #ff0033;
+            --panel-bg: rgba(15, 23, 42, 0.85);
         }
-        
-        /* Custom Scrollbars */
-        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
-        .custom-scroll { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
 
-        /* Code Block Styling */
-        pre { position: relative; border-radius: 0.75rem; overflow: hidden; margin-top: 0.75rem; margin-bottom: 0.75rem; background: #1e1e24 !important;}
-        .hljs { background: transparent !important; padding: 1rem !important; font-size: 0.875rem; line-height: 1.5; }
-        .copy-code-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(255,255,255,0.1); border: none; color: #cbd5e1; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; cursor: pointer; transition: background 0.2s; backdrop-filter: blur(4px); }
-        .copy-code-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-user-select: none;
+            user-select: none;
+        }
 
-        /* Markdown Prose Styling */
-        .prose p { margin-bottom: 0.75em; }
-        .prose p:last-child { margin-bottom: 0; }
-        .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.75em; }
-        .prose ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
-        .prose a { color: #818cf8; text-decoration: underline; text-underline-offset: 2px; }
-        .prose strong { color: white; font-weight: 600; }
-        .prose code:not(pre code) { background-color: rgba(255,255,255,0.1); padding: 0.1em 0.3em; border-radius: 0.25rem; font-family: monospace; font-size: 0.875em; color: #e2e8f0; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
 
-        /* Loading Dots Animation */
-        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        body.hud-mode {
+            transform: scaleX(-1);
+        }
+
+        /* Full Screen Layout */
+        .dashboard-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 10;
+            padding: 4vh 5vw;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 20;
+        }
+
+        .rpm-display-text {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.5rem;
+            line-height: 1;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .rpm-display-text span {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .settings-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+        }
+
+        .settings-btn:active {
+            transform: scale(0.9);
+            color: var(--text-main);
+        }
+
+        /* Center Display */
+        .center-display {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .gauge-canvas-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .speed-value-container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10vh; /* Offset to sit nicely in the arc */
+        }
+
+        .speed-number {
+            font-family: 'Teko', sans-serif;
+            font-size: 30vmin; /* Responsive massive font */
+            font-weight: 700;
+            line-height: 0.75;
+            color: var(--text-main);
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            letter-spacing: -0.02em;
+        }
+
+        .speed-unit {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.5vmin;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+            margin-top: 15px;
+        }
+
+        /* Bottom Status Bar */
+        .bottom-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 20;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #334155;
+            box-shadow: 0 0 0 rgba(0,0,0,0);
+            transition: all 0.3s;
+        }
+
+        .status-dot.active {
+            background: var(--rpm-green);
+            box-shadow: 0 0 15px var(--rpm-green);
+        }
+
+        /* Settings Modal (Glassmorphism Dark) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 90vw; max-width: 450px;
+            border-radius: 24px;
+            padding: 30px;
+            display: flex; flex-direction: column; gap: 25px;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.open .modal-content { transform: scale(1); }
+
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .modal-header h3 {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.2rem;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+        }
+
+        .close-btn {
+            background: rgba(255,255,255,0.1);
+            border: none; color: #fff;
+            width: 36px; height: 36px; border-radius: 50%;
+            font-size: 1.2rem; cursor: pointer;
+        }
+
+        .setting-group { display: flex; flex-direction: column; gap: 10px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; }
+        .setting-row span, .setting-group label {
+            font-size: 1.1rem; font-weight: 600; color: #cbd5e1;
+        }
+
+        input[type="range"] {
+            width: 100%; height: 6px; background: #334155;
+            border-radius: 3px; outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            background: #fff; border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        select, input[type="number"] {
+            background: rgba(0,0,0,0.5); border: 1px solid #475569;
+            color: #fff; padding: 12px; border-radius: 12px;
+            font-size: 1.1rem; font-family: 'Rajdhani', sans-serif;
+            font-weight: 600; outline: none;
+        }
+
+        .btn-primary {
+            background: #fff; color: #000; border: none;
+            padding: 16px; border-radius: 12px; font-family: 'Rajdhani', sans-serif;
+            font-weight: 700; font-size: 1.2rem; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 54px; height: 30px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-switch {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155; transition: .3s; border-radius: 30px;
+        }
+        .slider-switch:before {
+            position: absolute; content: ""; height: 22px; width: 22px;
+            left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider-switch { background-color: var(--rpm-green); box-shadow: 0 0 15px rgba(0,255,102,0.4); }
+        input:checked + .slider-switch:before { transform: translateX(24px); }
+
+        /* Manual Control */
+        .manual-control-bar {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 600px; background: rgba(15,23,42,0.8);
+            backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 20px;
+            display: flex; align-items: center; gap: 20px; z-index: 30;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .manual-control-bar.hidden { display: none; }
+        #manualSliderVal { font-family: 'Teko', sans-serif; font-size: 2rem; width: 50px; text-align: right; }
+
     </style>
 </head>
-<body class="text-slate-100 font-sans">
+<body>
 
-    <!-- Toast Notifications Container -->
-    <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- Mobile Sidebar Overlay -->
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity duration-300 opacity-0" onclick="UI.toggleSidebar()"></div>
-
-    <!-- Sidebar (Left Panel) -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 md:w-80 bg-slate-900 border-r border-slate-800 flex flex-col z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+    <!-- Full Screen Container -->
+    <div class="dashboard-container">
         
-        <!-- Sidebar Header (New Chat) -->
-        <div class="p-4 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
-            <button onclick="App.createNewChat()" class="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2.5 rounded-xl font-medium transition-colors shadow-lg shadow-brand-500/20 active:scale-95">
-                <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                Neuer Chat
-            </button>
-            <button onclick="UI.toggleSidebar()" class="md:hidden p-2.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition">
-                <i data-lucide="panel-left-close" class="w-5 h-5"></i>
+        <!-- Top Info -->
+        <div class="top-bar">
+            <div class="rpm-display-text" id="rpmTextDisplay">0 <span>RPM</span></div>
+            <button class="settings-btn" id="openSettings">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2.2 2.2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
             </button>
         </div>
 
-        <!-- Chat History List -->
-        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-1" id="chatList">
-            <!-- Dynamically populated -->
-        </div>
-
-        <!-- Sidebar Footer (Tools & Settings) -->
-        <div class="p-4 border-t border-slate-800 bg-slate-900 shrink-0 space-y-2">
-            <div class="flex gap-2">
-                <button onclick="Storage.exportData()" title="Backup Exportieren" class="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-xl text-xs font-medium transition cursor-pointer">
-                    <i data-lucide="download" class="w-4 h-4"></i> Export
-                </button>
-                <button onclick="document.getElementById('importFile').click()" title="Backup Importieren" class="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-xl text-xs font-medium transition cursor-pointer">
-                    <i data-lucide="upload" class="w-4 h-4"></i> Import
-                </button>
-                <input type="file" id="importFile" class="hidden" accept=".json" onchange="Storage.importData(event)">
+        <!-- Center Tacho & Gauge Layer -->
+        <div class="center-display">
+            <div class="gauge-canvas-wrapper">
+                <canvas id="gaugeCanvas"></canvas>
             </div>
-            <button onclick="UI.openModal('settingsModal')" class="w-full flex items-center gap-3 bg-slate-800/50 hover:bg-slate-800 text-slate-300 px-4 py-3 rounded-xl font-medium transition cursor-pointer border border-slate-700/50">
-                <i data-lucide="settings" class="w-5 h-5 text-brand-400"></i>
-                System & API-Keys
-            </button>
+            <div class="speed-value-container">
+                <div class="speed-number" id="speedDisplay">0</div>
+                <div class="speed-unit">km/h</div>
+            </div>
         </div>
-    </aside>
 
-    <!-- Main Chat Area -->
-    <main class="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
-        
-        <!-- Header -->
-        <header class="h-16 border-b border-slate-800 flex items-center justify-between px-4 lg:px-6 bg-slate-950/80 backdrop-blur-md z-10 shrink-0">
-            <div class="flex items-center gap-3">
-                <button onclick="UI.toggleSidebar()" class="md:hidden p-2 -ml-2 text-slate-400 hover:text-white rounded-lg">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
-                
-                <!-- Advanced Model Selector -->
-                <div class="relative group">
-                    <select id="modelSelector" class="bg-slate-900 border border-slate-700 text-slate-200 font-semibold text-sm rounded-xl pl-10 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer appearance-none shadow-sm transition group-hover:border-slate-600">
-                        <optgroup label="OpenAI (Tier 1)">
-                            <option value="openai:gpt-4o">GPT-4o (Omni)</option>
-                            <option value="openai:gpt-4o-mini" selected>GPT-4o Mini (Fast)</option>
-                        </optgroup>
-                        <optgroup label="Google (Gemini)">
-                            <option value="google:gemini-1.5-pro">Gemini 1.5 Pro</option>
-                            <option value="google:gemini-1.5-flash">Gemini 1.5 Flash</option>
-                        </optgroup>
-                        <optgroup label="Anthropic / OpenRouter">
-                            <option value="openrouter:anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-                            <option value="openrouter:meta-llama/llama-3.1-70b-instruct">Llama 3.1 (70B)</option>
-                        </optgroup>
+        <!-- Bottom Info -->
+        <div class="bottom-bar">
+            <div class="status-pill">
+                <div class="status-dot" id="gpsStatusDot"></div>
+                <span id="gpsStatusText">GPS OFF</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Simulator -->
+    <div class="manual-control-bar" id="manualBar">
+        <span style="font-family: 'Teko', sans-serif; font-size: 1.5rem; letter-spacing: 0.1em;">SIM</span>
+        <input type="range" id="manualSpeedSlider" min="0" max="200" value="0" style="flex:1;">
+        <span id="manualSliderVal">0</span>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>SYSTEM SETTINGS</h3>
+                <button class="close-btn" id="closeSettings">✕</button>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-row">
+                    <span>GPS Telemetry</span>
+                    <label class="switch">
+                        <input type="checkbox" id="gpsToggle">
+                        <span class="slider-switch"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Wheel Size (Inches)</label>
+                <div style="display: flex; gap: 10px;">
+                    <select id="tirePreset" style="flex: 2;">
+                        <option value="10">10" (Scooter)</option>
+                        <option value="19">19" (MX Rear)</option>
+                        <option value="21">21" (MX Front)</option>
+                        <option value="28" selected>28" (Street)</option>
+                        <option value="custom">Custom</option>
                     </select>
-                    <i data-lucide="cpu" class="w-4 h-4 text-brand-400 absolute left-3 top-2.5 pointer-events-none"></i>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 absolute right-3 top-2.5 pointer-events-none transition group-hover:text-slate-300"></i>
+                    <input type="number" id="customTireSize" value="28" min="4" max="50" style="flex: 1;" disabled>
                 </div>
             </div>
 
-            <button onclick="App.clearCurrentChat()" title="Chat leeren" class="text-slate-500 hover:text-rose-400 p-2 rounded-lg hover:bg-slate-900 transition">
-                <i data-lucide="eraser" class="w-5 h-5"></i>
-            </button>
-        </header>
+            <div class="setting-group">
+                <div class="setting-row">
+                    <label>Redline Limit</label>
+                    <span id="redlineValText" style="font-family:'Teko', sans-serif; font-size: 1.8rem;">10000</span>
+                </div>
+                <!-- Requested Range: 10 to 10000 -->
+                <input type="range" id="redlineSlider" min="10" max="10000" step="10" value="10000">
+            </div>
 
-        <!-- Messages Container -->
-        <div id="messageContainer" class="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 pb-32">
-            <!-- Empty State -->
-            <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-6 space-y-6 animate-fade-in max-w-md mx-auto">
-                <div class="w-20 h-20 bg-gradient-to-br from-brand-600/20 to-indigo-600/20 rounded-3xl flex items-center justify-center border border-brand-500/30 shadow-2xl shadow-brand-500/10 relative">
-                    <i data-lucide="sparkles" class="w-10 h-10 text-brand-400"></i>
-                    <div class="absolute -right-2 -bottom-2 bg-slate-800 border border-slate-700 text-xs px-2 py-0.5 rounded-full text-slate-300 flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Ready
-                    </div>
-                </div>
-                <div>
-                    <h2 class="text-2xl font-bold bg-gradient-to-r from-slate-100 to-slate-400 bg-clip-text text-transparent">Pro AI Workspace</h2>
-                    <p class="text-slate-400 text-sm mt-2 leading-relaxed">
-                        Nutze die stärksten Modelle der Welt in einer einheitlichen Oberfläche. Konfiguriere deine API-Keys in den Einstellungen.
-                    </p>
-                </div>
-                <div class="flex flex-wrap justify-center gap-2 mt-4">
-                    <button onclick="document.getElementById('userInput').value='Schreibe einen kurzen Python-Code für ein Snake-Spiel.'; document.getElementById('userInput').focus();" class="text-xs bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">Python Snake</button>
-                    <button onclick="document.getElementById('userInput').value='Fasse die Prinzipien von SOLID-Design zusammen.'; document.getElementById('userInput').focus();" class="text-xs bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">SOLID Prinzipien</button>
+            <div class="setting-group">
+                <div class="setting-row">
+                    <span>HUD Mirror View</span>
+                    <label class="switch">
+                        <input type="checkbox" id="hudToggle">
+                        <span class="slider-switch"></span>
+                    </label>
                 </div>
             </div>
-        </div>
 
-        <!-- Input Area (Fixed to bottom) -->
-        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-950 via-slate-950 to-transparent pt-10 pb-4 px-4 md:px-6 z-20">
-            <form id="chatForm" class="max-w-4xl mx-auto relative flex items-end gap-2 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 transition-all focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10">
-                <button type="button" onclick="UI.openModal('systemPromptModal')" title="System Prompt einstellen" class="p-3 text-slate-400 hover:text-brand-400 hover:bg-slate-800 rounded-xl transition shrink-0">
-                    <i data-lucide="command" class="w-5 h-5"></i>
-                </button>
-                <textarea 
-                    id="userInput" 
-                    rows="1" 
-                    placeholder="Frag mich alles..." 
-                    class="w-full bg-transparent text-slate-100 placeholder-slate-500 border-none py-3 px-2 text-[15px] focus:outline-none focus:ring-0 resize-none max-h-48 custom-scroll"
-                ></textarea>
-                <button type="submit" id="sendBtn" class="p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl transition-all shadow-md active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
-                    <i data-lucide="send" class="w-5 h-5"></i>
-                </button>
-            </form>
-            <div class="text-center mt-2 text-[11px] font-medium text-slate-500">
-                Sichere, lokale Ausführung • Keys verlassen nicht deinen Browser
-            </div>
-        </div>
-    </main>
-
-    <!-- ================= MODALS ================= -->
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-200">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="settingsModalContent">
-            <div class="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-                <h3 class="font-bold text-lg flex items-center gap-2 text-white">
-                    <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i> API-Konfiguration
-                </h3>
-                <button onclick="UI.closeModal('settingsModal')" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <div class="p-6 space-y-5 overflow-y-auto max-h-[70vh] custom-scroll">
-                
-                <!-- API Keys -->
-                <div class="space-y-4">
-                    <div class="group relative">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-2">
-                            <i data-lucide="key" class="w-3 h-3"></i> OpenAI API Key
-                        </label>
-                        <input type="password" id="keyOpenAI" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="sk-...">
-                    </div>
-                    <div class="group relative">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-2">
-                            <i data-lucide="key" class="w-3 h-3"></i> Google Gemini API Key
-                        </label>
-                        <input type="password" id="keyGoogle" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="AIzaSy...">
-                    </div>
-                    <div class="group relative">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-2">
-                            <i data-lucide="key" class="w-3 h-3"></i> OpenRouter Key <span class="text-slate-600 normal-case font-normal">(Für Claude, Llama etc.)</span>
-                        </label>
-                        <input type="password" id="keyOpenRouter" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="sk-or-v1-...">
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t border-slate-800">
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Globale Parameter</label>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-slate-300">Temperatur (<span id="tempValueDisplay">0.7</span>)</span>
-                        <input type="range" id="paramTemperature" min="0" max="2" step="0.1" value="0.7" class="w-1/2 accent-brand-500">
-                    </div>
-                    <p class="text-[10px] text-slate-500 mt-1">Höher = Kreativer, Niedriger = Präziser/Analytischer.</p>
-                </div>
-            </div>
-            <div class="p-5 border-t border-slate-800 bg-slate-900/50 flex gap-3">
-                <button onclick="Storage.clearAllData()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 transition">Alle Daten löschen</button>
-                <div class="flex-1"></div>
-                <button onclick="App.saveSettings()" class="bg-brand-600 hover:bg-brand-500 text-white font-medium px-6 py-2.5 rounded-xl text-sm shadow-lg shadow-brand-500/20 transition">
-                    Speichern
-                </button>
-            </div>
+            <button class="btn-primary" id="saveAndClose">CONFIRM</button>
         </div>
     </div>
 
-    <!-- System Prompt Modal -->
-    <div id="systemPromptModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-200">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="systemPromptModalContent">
-            <div class="p-5 border-b border-slate-800 flex justify-between items-center">
-                <h3 class="font-bold text-lg flex items-center gap-2 text-white">
-                    <i data-lucide="terminal-square" class="w-5 h-5 text-brand-400"></i> System Prompt
-                </h3>
-                <button onclick="UI.closeModal('systemPromptModal')" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <p class="text-xs text-slate-400 mb-3">Anweisungen auf Systemebene ändern das fundamentale Verhalten der KI (Rolle, Formatierung, Tonfall).</p>
-                <textarea id="systemPromptInput" rows="5" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-slate-100 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition custom-scroll" placeholder="Du bist ein erfahrener Softwarearchitekt. Antworte immer kurz, präzise und liefere sauberen Code..."></textarea>
-            </div>
-            <div class="p-5 border-t border-slate-800 flex justify-end">
-                <button onclick="App.saveSettings()" class="bg-brand-600 hover:bg-brand-500 text-white font-medium px-6 py-2.5 rounded-xl text-sm transition">
-                    Übernehmen
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= JAVASCRIPT ================= -->
     <script>
-        // Initialisiere Icons
-        lucide.createIcons();
+        // Core State
+        let currentSpeed = 0;
+        let displaySpeed = 0;
+        let currentRpm = 0;
+        let displayRpm = 0;
+        let maxRpmLimit = 10000;
+        let tireSizeInches = 28;
+        let gpsActive = false;
+        let gpsWatchId = null;
 
-        /**
-         * Konfiguration für Markdown (Marked.js) und Syntax Highlighting
-         */
-        marked.setOptions({
-            highlight: function(code, lang) {
-                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                return hljs.highlight(code, { language }).value;
-            },
-            langPrefix: 'hljs language-',
-            breaks: true,
-            gfm: true
-        });
+        // Elements
+        const speedDisplay = document.getElementById('speedDisplay');
+        const rpmTextDisplay = document.getElementById('rpmTextDisplay');
+        const canvas = document.getElementById('gaugeCanvas');
+        const ctx = canvas.getContext('2d');
+        const manualBar = document.getElementById('manualBar');
+        const manualSpeedSlider = document.getElementById('manualSpeedSlider');
+        const manualSliderVal = document.getElementById('manualSliderVal');
+        
+        const settingsModal = document.getElementById('settingsModal');
+        const openSettingsBtn = document.getElementById('openSettings');
+        const closeSettingsBtn = document.getElementById('closeSettings');
+        const saveAndCloseBtn = document.getElementById('saveAndClose');
+        const gpsToggle = document.getElementById('gpsToggle');
+        const hudToggle = document.getElementById('hudToggle');
+        const tirePreset = document.getElementById('tirePreset');
+        const customTireSize = document.getElementById('customTireSize');
+        const redlineSlider = document.getElementById('redlineSlider');
+        const redlineValText = document.getElementById('redlineValText');
+        const gpsStatusDot = document.getElementById('gpsStatusDot');
+        const gpsStatusText = document.getElementById('gpsStatusText');
 
-        // Custom Renderer für Code-Blöcke (Fügt Kopier-Button hinzu)
-        const renderer = new marked.Renderer();
-        renderer.code = function(code, language) {
-            const validLang = !!(language && hljs.getLanguage(language));
-            const highlighted = validLang ? hljs.highlight(code, { language }).value : escapeHtml(code);
-            // Escape code for the onclick handler string
-            const safeCode = escapeHtml(code).replace(/'/g, "\\'").replace(/\n/g, '\\n');
-            
-            return `
-                <div class="relative group mt-4 mb-4">
-                    <div class="absolute flex items-center justify-between top-0 left-0 right-0 bg-slate-800/80 backdrop-blur text-slate-400 text-xs px-3 py-1.5 rounded-t-xl border-b border-slate-700/50">
-                        <span class="font-mono uppercase">${language || 'text'}</span>
-                        <button onclick="UI.copyToClipboard('${safeCode}')" class="flex items-center gap-1 hover:text-white transition">
-                            <i data-lucide="copy" class="w-3 h-3"></i> Kopieren
-                        </button>
-                    </div>
-                    <pre class="!mt-0 !rounded-t-none border border-slate-700"><code class="hljs ${language}">${highlighted}</code></pre>
-                </div>`;
-        };
-        marked.use({ renderer });
+        // High DPI Canvas Setup for Full Screen
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        // Utility: HTML Escaping
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+        function calculateRPM(speedKmh, tireInches) {
+            if (speedKmh <= 0 || tireInches <= 0) return 0;
+            return (speedKmh * 1000 / 60) / (Math.PI * tireInches * 0.0254);
         }
 
-        /**
-         * Speicher-Verwaltung (Storage)
-         */
-        const Storage = {
-            keys: { openai: '', google: '', openrouter: '' },
-            settings: { temperature: 0.7, systemPrompt: '' },
-            chats: [],
+        // Draw Advanced Segmented Neon Arc
+        function drawGauge() {
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            ctx.clearRect(0, 0, width, height);
 
-            init() {
-                const storedKeys = localStorage.getItem('ai_keys');
-                const storedSettings = localStorage.getItem('ai_settings');
-                const storedChats = localStorage.getItem('ai_chats');
+            const centerX = width / 2;
+            const centerY = height * 0.65; // Position arc to frame the text
+            const radius = Math.min(width * 0.45, height * 0.55);
+            
+            const startAngle = Math.PI * 0.8;
+            const endAngle = Math.PI * 2.2;
+            const totalAngleSpan = endAngle - startAngle;
 
-                if (storedKeys) this.keys = { ...this.keys, ...JSON.parse(storedKeys) };
-                if (storedSettings) this.settings = { ...this.settings, ...JSON.parse(storedSettings) };
-                if (storedChats) this.chats = JSON.parse(storedChats);
+            // Segment configuration
+            const totalSegments = 60; // Cool digital LED look
+            const segmentGap = 0.025; 
+            const segmentSpan = (totalAngleSpan / totalSegments) - segmentGap;
 
-                // UI mit geladenen Werten füllen
-                document.getElementById('keyOpenAI').value = this.keys.openai;
-                document.getElementById('keyGoogle').value = this.keys.google;
-                document.getElementById('keyOpenRouter').value = this.keys.openrouter;
-                document.getElementById('paramTemperature').value = this.settings.temperature;
-                document.getElementById('tempValueDisplay').textContent = this.settings.temperature;
-                document.getElementById('systemPromptInput').value = this.settings.systemPrompt;
-            },
-
-            saveKeysAndSettings() {
-                this.keys.openai = document.getElementById('keyOpenAI').value.trim();
-                this.keys.google = document.getElementById('keyGoogle').value.trim();
-                this.keys.openrouter = document.getElementById('keyOpenRouter').value.trim();
+            // 1. Draw Inactive Background Track (Dark transparent dashes)
+            for (let i = 0; i < totalSegments; i++) {
+                const a1 = startAngle + i * (segmentSpan + segmentGap);
+                const a2 = a1 + segmentSpan;
                 
-                this.settings.temperature = parseFloat(document.getElementById('paramTemperature').value);
-                this.settings.systemPrompt = document.getElementById('systemPromptInput').value.trim();
-
-                localStorage.setItem('ai_keys', JSON.stringify(this.keys));
-                localStorage.setItem('ai_settings', JSON.stringify(this.settings));
-            },
-
-            saveChats() {
-                localStorage.setItem('ai_chats', JSON.stringify(this.chats));
-            },
-
-            exportData() {
-                const data = { chats: this.chats, timestamp: new Date().toISOString() };
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ai_backup_${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                UI.showToast('Backup erfolgreich exportiert', 'success');
-            },
-
-            importData(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        if (data.chats && Array.isArray(data.chats)) {
-                            this.chats = data.chats;
-                            this.saveChats();
-                            App.currentChatId = this.chats.length > 0 ? this.chats[0].id : null;
-                            App.renderChatList();
-                            App.renderMessages();
-                            UI.showToast('Backup erfolgreich importiert!', 'success');
-                        } else {
-                            throw new Error("Ungültiges Format");
-                        }
-                    } catch (err) {
-                        UI.showToast('Fehler beim Import: ' + err.message, 'error');
-                    }
-                };
-                reader.readAsText(file);
-                event.target.value = ''; // Reset input
-            },
-
-            clearAllData() {
-                if(confirm('Möchtest du wirklich alle Chats, Keys und Einstellungen unwiderruflich löschen?')) {
-                    localStorage.removeItem('ai_keys');
-                    localStorage.removeItem('ai_settings');
-                    localStorage.removeItem('ai_chats');
-                    location.reload();
-                }
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, a1, a2);
+                ctx.lineWidth = 12;
+                ctx.lineCap = 'butt';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+                ctx.shadowBlur = 0;
+                ctx.stroke();
             }
-        };
 
-        /**
-         * UI Controller
-         */
-        const UI = {
-            toggleSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebarOverlay');
+            // 2. Draw Active Glow Segments
+            const rpmRatio = Math.min(Math.max(displayRpm / maxRpmLimit, 0), 1);
+            if (rpmRatio > 0) {
+                const activeSegments = Math.floor(rpmRatio * totalSegments);
                 
-                if (sidebar.classList.contains('-translate-x-full')) {
-                    sidebar.classList.remove('-translate-x-full');
-                    overlay.classList.remove('hidden');
-                    setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-                } else {
-                    sidebar.classList.add('-translate-x-full');
-                    overlay.classList.add('opacity-0');
-                    setTimeout(() => overlay.classList.add('hidden'), 300);
-                }
-            },
+                for (let i = 0; i < activeSegments; i++) {
+                    const a1 = startAngle + i * (segmentSpan + segmentGap);
+                    const a2 = a1 + segmentSpan;
+                    const pointRatio = i / totalSegments;
 
-            openModal(id) {
-                const modal = document.getElementById(id);
-                const content = document.getElementById(id + 'Content');
-                modal.classList.remove('hidden');
-                // Timeout für CSS transition
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    content.classList.remove('scale-95');
-                }, 10);
-            },
-
-            closeModal(id) {
-                const modal = document.getElementById(id);
-                const content = document.getElementById(id + 'Content');
-                modal.classList.add('opacity-0');
-                content.classList.add('scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 200);
-            },
-
-            scrollToBottom() {
-                const container = document.getElementById('messageContainer');
-                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-            },
-
-            autoResizeTextarea(el) {
-                el.style.height = 'auto';
-                let newHeight = el.scrollHeight;
-                el.style.height = (newHeight > 200 ? 200 : newHeight) + 'px';
-            },
-
-            showToast(message, type = 'success') {
-                const container = document.getElementById('toastContainer');
-                const toast = document.createElement('div');
-                const colors = type === 'success' ? 'bg-emerald-500/90 border-emerald-500' : 'bg-rose-500/90 border-rose-500';
-                const icon = type === 'success' ? 'check-circle' : 'alert-circle';
-                
-                toast.className = `flex items-center gap-2 ${colors} border text-white px-4 py-2 rounded-xl shadow-lg animate-slide-up backdrop-blur-sm text-sm font-medium`;
-                toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> ${message}`;
-                
-                container.appendChild(toast);
-                lucide.createIcons();
-
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateY(-10px)';
-                    toast.style.transition = 'all 0.3s';
-                    setTimeout(() => toast.remove(), 300);
-                }, 3000);
-            },
-
-            async copyToClipboard(text) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    this.showToast('Kopiert!', 'success');
-                } catch (err) {
-                    this.showToast('Fehler beim Kopieren', 'error');
-                }
-            }
-        };
-
-        /**
-         * API Client
-         */
-        const API = {
-            async fetchResponse(provider, model, messages) {
-                // System Prompt integrieren
-                const msgsToSend = [...messages];
-                if (Storage.settings.systemPrompt) {
-                    msgsToSend.unshift({ role: 'system', content: Storage.settings.systemPrompt });
-                }
-
-                if (provider === 'openai') return this.callOpenAI(model, msgsToSend);
-                if (provider === 'google') return this.callGemini(model, msgsToSend);
-                if (provider === 'openrouter') return this.callOpenRouter(model, msgsToSend);
-                throw new Error("Unbekannter Provider");
-            },
-
-            async callOpenAI(model, messages) {
-                if (!Storage.keys.openai) throw new Error("OpenAI API-Key fehlt!");
-                const res = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Storage.keys.openai}` },
-                    body: JSON.stringify({ model, messages, temperature: Storage.settings.temperature })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error?.message || 'OpenAI API Fehler');
-                return data.choices[0].message.content;
-            },
-
-            async callGemini(model, messages) {
-                if (!Storage.keys.google) throw new Error("Google API-Key fehlt!");
-                // Gemini Format adaptieren (System Prompt via system_instruction falls unterstützt, hier simplifiziert)
-                let contents = messages.filter(m => m.role !== 'system').map(m => ({
-                    role: m.role === 'assistant' ? 'model' : 'user',
-                    parts: [{ text: m.content }]
-                }));
-                
-                // System prompt als erste User Nachricht injecten für Gemini (Workaround)
-                const sysMsg = messages.find(m => m.role === 'system');
-                if(sysMsg && contents.length > 0) {
-                    contents[0].parts[0].text = `[SYSTEM ANWEISUNG: ${sysMsg.content}]\n\n${contents[0].parts[0].text}`;
-                }
-
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${Storage.keys.google}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        contents,
-                        generationConfig: { temperature: Storage.settings.temperature }
-                    })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error?.message || 'Google API Fehler');
-                return data.candidates[0].content.parts[0].text;
-            },
-
-            async callOpenRouter(model, messages) {
-                if (!Storage.keys.openrouter) throw new Error("OpenRouter API-Key fehlt!");
-                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${Storage.keys.openrouter}`,
-                        'HTTP-Referer': window.location.href, // OpenRouter benötigt dies
-                        'X-Title': 'AI Central Pro'
-                    },
-                    body: JSON.stringify({ model, messages, temperature: Storage.settings.temperature })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error?.message || 'OpenRouter API Fehler');
-                return data.choices[0].message.content;
-            }
-        };
-
-        /**
-         * Main App Controller
-         */
-        const App = {
-            currentChatId: null,
-
-            init() {
-                Storage.init();
-                
-                // Event Listeners Setup
-                document.getElementById('paramTemperature').addEventListener('input', (e) => {
-                    document.getElementById('tempValueDisplay').textContent = e.target.value;
-                });
-
-                const userInput = document.getElementById('userInput');
-                userInput.addEventListener('input', function() { UI.autoResizeTextarea(this); });
-                userInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if(window.innerWidth >= 768) document.getElementById('chatForm').requestSubmit();
-                        else document.getElementById('chatForm').requestSubmit(); // Allow submit on mobile enter too
-                    }
-                });
-
-                document.getElementById('chatForm').addEventListener('submit', this.handleChatSubmit.bind(this));
-
-                // Load initial state
-                if (Storage.chats.length > 0) {
-                    this.currentChatId = Storage.chats[0].id;
-                } else {
-                    this.createNewChat(false);
-                }
-
-                this.renderChatList();
-                this.renderMessages();
-            },
-
-            saveSettings() {
-                Storage.saveKeysAndSettings();
-                UI.closeModal('settingsModal');
-                UI.closeModal('systemPromptModal');
-                UI.showToast('Einstellungen gespeichert');
-            },
-
-            createNewChat(switchUI = true) {
-                this.currentChatId = Date.now().toString();
-                Storage.chats.unshift({ id: this.currentChatId, title: 'Neuer Chat', messages: [], modelStr: document.getElementById('modelSelector').value });
-                Storage.saveChats();
-                
-                this.renderChatList();
-                this.renderMessages();
-                
-                const input = document.getElementById('userInput');
-                input.value = '';
-                input.style.height = 'auto';
-                
-                if (switchUI && window.innerWidth < 768) UI.toggleSidebar();
-                input.focus();
-            },
-
-            deleteChat(e, id) {
-                e.stopPropagation();
-                Storage.chats = Storage.chats.filter(c => c.id !== id);
-                if (this.currentChatId === id) {
-                    this.currentChatId = Storage.chats.length > 0 ? Storage.chats[0].id : null;
-                }
-                Storage.saveChats();
-                this.renderChatList();
-                this.renderMessages();
-            },
-
-            clearCurrentChat() {
-                if (!this.currentChatId) return;
-                if (confirm('Nachrichtenverlauf für diesen Chat löschen?')) {
-                    const chat = Storage.chats.find(c => c.id === this.currentChatId);
-                    if(chat) {
-                        chat.messages = [];
-                        chat.title = 'Neuer Chat';
-                        Storage.saveChats();
-                        this.renderChatList();
-                        this.renderMessages();
-                    }
-                }
-            },
-
-            renderChatList() {
-                const container = document.getElementById('chatList');
-                container.innerHTML = '';
-                
-                Storage.chats.forEach(chat => {
-                    const isActive = chat.id === this.currentChatId;
-                    const btn = document.createElement('div');
-                    btn.className = `group relative w-full text-left px-3 py-3 rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all duration-200 border ${isActive ? 'bg-slate-800 border-slate-700 shadow-md' : 'border-transparent hover:bg-slate-800/50 hover:border-slate-800'}`;
-                    btn.onclick = () => { 
-                        this.currentChatId = chat.id; 
-                        
-                        // Set dropdown to chat's model if saved
-                        if(chat.modelStr) document.getElementById('modelSelector').value = chat.modelStr;
-                        
-                        this.renderChatList(); 
-                        this.renderMessages(); 
-                        if (window.innerWidth < 768) UI.toggleSidebar();
-                    };
-
-                    const titleSpan = document.createElement('span');
-                    titleSpan.className = `truncate flex-1 pr-6 ${isActive ? 'text-white font-medium' : 'text-slate-400 group-hover:text-slate-200'}`;
-                    titleSpan.textContent = chat.title;
-
-                    const delBtn = document.createElement('button');
-                    delBtn.className = `absolute right-2 p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity`;
-                    delBtn.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4"></i>`;
-                    delBtn.onclick = (e) => this.deleteChat(e, chat.id);
-
-                    btn.appendChild(titleSpan);
-                    btn.appendChild(delBtn);
-                    container.appendChild(btn);
-                });
-                lucide.createIcons();
-            },
-
-            renderMessages() {
-                const container = document.getElementById('messageContainer');
-                const emptyState = document.getElementById('emptyState');
-                const chat = Storage.chats.find(c => c.id === this.currentChatId);
-
-                if (!chat || chat.messages.length === 0) {
-                    Array.from(container.children).forEach(c => { if(c.id !== 'emptyState') c.remove() });
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
-
-                emptyState.classList.add('hidden');
-                
-                // Clear container except emptyState
-                Array.from(container.children).forEach(c => { if(c.id !== 'emptyState') c.remove() });
-
-                chat.messages.forEach(m => this.appendMessageDOM(m.role, m.content, false));
-                lucide.createIcons();
-                UI.scrollToBottom();
-            },
-
-            appendMessageDOM(role, content, animate = true) {
-                const container = document.getElementById('messageContainer');
-                const isUser = role === 'user';
-                const msgDiv = document.createElement('div');
-                
-                msgDiv.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} mb-6 ${animate ? 'animate-fade-in' : ''}`;
-                
-                let contentHTML = '';
-                if (isUser) {
-                    contentHTML = escapeHtml(content).replace(/\n/g, '<br>');
-                } else if (content === 'loading...') {
-                    contentHTML = `<div class="flex gap-1 py-1.5"><div class="w-2 h-2 bg-brand-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-brand-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-brand-400 rounded-full typing-dot"></div></div>`;
-                } else {
-                    // Markdown Rendering for Assistant
-                    contentHTML = `<div class="prose prose-invert prose-sm max-w-none text-[15px] leading-relaxed">${marked.parse(content)}</div>`;
-                }
-
-                // Avatar and styling
-                const avatar = isUser ? 
-                    `<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shrink-0 shadow-lg"><i data-lucide="user" class="w-4 h-4 text-white"></i></div>` : 
-                    `<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-blue-500 flex items-center justify-center shrink-0 shadow-lg shadow-brand-500/20 ring-2 ring-brand-500/20"><i data-lucide="sparkles" class="w-4 h-4 text-white"></i></div>`;
-
-                const bubbleClass = isUser ? 
-                    'bg-slate-800 border border-slate-700 text-slate-100 rounded-2xl rounded-tr-sm px-4 py-3 shadow-md' : 
-                    'bg-transparent text-slate-200 py-1 w-full overflow-hidden';
-
-                msgDiv.innerHTML = `
-                    <div class="flex gap-4 max-w-3xl w-full ${isUser ? 'flex-row-reverse' : 'flex-row'}">
-                        ${avatar}
-                        <div class="${bubbleClass} relative group">
-                            ${!isUser && content !== 'loading...' ? `<button onclick="UI.copyToClipboard('${escapeHtml(content).replace(/'/g, "\\'").replace(/\n/g, '\\n')}')" class="absolute -left-8 top-1 p-1.5 text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition rounded-md bg-slate-800 border border-slate-700"><i data-lucide="copy" class="w-3 h-3"></i></button>` : ''}
-                            ${contentHTML}
-                        </div>
-                    </div>
-                `;
-                
-                container.appendChild(msgDiv);
-                if (animate) {
-                    lucide.createIcons();
-                    // Initialize highlight.js on new blocks
-                    msgDiv.querySelectorAll('pre code').forEach((block) => { hljs.highlightElement(block); });
-                    UI.scrollToBottom();
-                }
-                return msgDiv;
-            },
-
-            async handleChatSubmit(e) {
-                e.preventDefault();
-                const inputBtn = document.getElementById('sendBtn');
-                const userInputField = document.getElementById('userInput');
-                const text = userInputField.value.trim();
-                
-                if (!text || inputBtn.disabled) return;
-
-                if (!this.currentChatId) this.createNewChat(false);
-                const chat = Storage.chats.find(c => c.id === this.currentChatId);
-
-                // Auto-Title generation for first message
-                if (chat.messages.length === 0) {
-                    chat.title = text.length > 30 ? text.substring(0, 30) + '...' : text;
-                    this.renderChatList();
-                }
-
-                // Add User Message
-                chat.messages.push({ role: 'user', content: text });
-                this.appendMessageDOM('user', text);
-                
-                // Cleanup Input
-                userInputField.value = '';
-                userInputField.style.height = 'auto';
-                inputBtn.disabled = true;
-
-                // Add Loading Message
-                const loadingDiv = this.appendMessageDOM('assistant', 'loading...');
-                
-                // Get Model Selection
-                const modelStr = document.getElementById('modelSelector').value;
-                chat.modelStr = modelStr; // Save model used for this chat
-                const [provider, modelName] = modelStr.split(':');
-
-                try {
-                    // Fetch API
-                    const reply = await API.fetchResponse(provider, modelName, chat.messages);
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, a1, a2);
+                    ctx.lineWidth = 14; 
+                    ctx.lineCap = 'round'; // rounded glowing LEDs
                     
-                    // Update State
-                    chat.messages.push({ role: 'assistant', content: reply });
-                    Storage.saveChats();
-                    
-                    // Update UI
-                    loadingDiv.remove();
-                    this.appendMessageDOM('assistant', reply);
+                    // Color Logic
+                    let segmentColor;
+                    if (pointRatio < 0.65) {
+                        segmentColor = '#00ff66'; // Stark Green
+                    } else if (pointRatio < 0.85) {
+                        segmentColor = '#ffcc00'; // Warning Yellow
+                    } else {
+                        segmentColor = '#ff0033'; // Redline
+                    }
 
-                } catch (err) {
-                    loadingDiv.remove();
-                    this.appendMessageDOM('assistant', `**Ein Fehler ist aufgetreten:**\n\`\`\`text\n${err.message}\n\`\`\`\n*Bitte prüfe deine API-Keys in den Einstellungen.*`);
-                    chat.messages.pop(); // Remove user message from history on failure so they can try again
-                } finally {
-                    inputBtn.disabled = false;
-                    userInputField.focus();
+                    ctx.strokeStyle = segmentColor;
+                    
+                    // Add Neon Glow
+                    ctx.shadowColor = segmentColor;
+                    ctx.shadowBlur = 15; // Intense glow
+
+                    ctx.stroke();
                 }
             }
+            
+            // Reset shadow for other drawings
+            ctx.shadowBlur = 0;
+        }
+
+        // 60FPS Render Loop
+        function update() {
+            displaySpeed += (currentSpeed - displaySpeed) * 0.15;
+            displayRpm += (currentRpm - displayRpm) * 0.15;
+
+            speedDisplay.textContent = Math.round(displaySpeed);
+            rpmTextDisplay.innerHTML = `${Math.round(displayRpm)} <span>RPM</span>`;
+
+            drawGauge();
+            requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+
+        // --- Event Listeners & Logic ---
+
+        manualSpeedSlider.addEventListener('input', (e) => {
+            if (!gpsActive) {
+                currentSpeed = parseFloat(e.target.value);
+                manualSliderVal.textContent = Math.round(currentSpeed);
+                currentRpm = calculateRPM(currentSpeed, tireSizeInches);
+            }
+        });
+
+        const toggleModal = (show) => {
+            if(show) settingsModal.classList.add('open');
+            else settingsModal.classList.remove('open');
         };
+        openSettingsBtn.addEventListener('click', () => toggleModal(true));
+        closeSettingsBtn.addEventListener('click', () => toggleModal(false));
+        saveAndCloseBtn.addEventListener('click', () => toggleModal(false));
 
-        // Initialize App on DOM Load
-        document.addEventListener('DOMContentLoaded', () => App.init());
+        tirePreset.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                customTireSize.disabled = false;
+                customTireSize.focus();
+                tireSizeInches = parseFloat(customTireSize.value) || 28;
+            } else {
+                customTireSize.disabled = true;
+                tireSizeInches = parseFloat(e.target.value);
+                customTireSize.value = tireSizeInches;
+            }
+            currentRpm = calculateRPM(currentSpeed, tireSizeInches);
+        });
 
+        customTireSize.addEventListener('input', (e) => {
+            tireSizeInches = parseFloat(e.target.value) || 28;
+            currentRpm = calculateRPM(currentSpeed, tireSizeInches);
+        });
+
+        // Dynamic Redline Limit (10 to 10000)
+        redlineSlider.addEventListener('input', (e) => {
+            maxRpmLimit = parseInt(e.target.value);
+            redlineValText.textContent = maxRpmLimit;
+        });
+
+        hudToggle.addEventListener('change', (e) => {
+            if (e.target.checked) document.body.classList.add('hud-mode');
+            else document.body.classList.remove('hud-mode');
+        });
+
+        gpsToggle.addEventListener('change', (e) => {
+            gpsActive = e.target.checked;
+            if (gpsActive) startGpsTracking();
+            else stopGpsTracking();
+        });
+
+        function startGpsTracking() {
+            if (!navigator.geolocation) {
+                alert('GPS Not Supported.');
+                gpsToggle.checked = false;
+                gpsActive = false;
+                return;
+            }
+
+            gpsStatusText.textContent = 'GPS SEARCHING';
+            manualBar.classList.add('hidden');
+
+            const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+            gpsWatchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    gpsStatusDot.classList.add('active');
+                    gpsStatusText.textContent = 'GPS LINKED';
+                    
+                    const speedMs = position.coords.speed;
+                    currentSpeed = (speedMs !== null && speedMs >= 0) ? (speedMs * 3.6) : 0;
+                    currentRpm = calculateRPM(currentSpeed, tireSizeInches);
+                },
+                (error) => {
+                    gpsStatusDot.classList.remove('active');
+                    gpsStatusText.textContent = 'NO SIGNAL';
+                },
+                options
+            );
+        }
+
+        function stopGpsTracking() {
+            if (gpsWatchId !== null) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+            }
+            gpsStatusDot.classList.remove('active');
+            gpsStatusText.textContent = 'GPS OFF';
+            manualBar.classList.remove('hidden');
+        }
     </script>
 </body>
 </html>
