@@ -2,618 +2,440 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stark VARG Full-Screen Dashboard</title>
-    <!-- Stark VARG Style Font (Teko & Rajdhani) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAD Automation - Projekt Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #090b10;
-            --text-main: #ffffff;
-            --text-muted: #64748b;
-            --rpm-green: #00ff66;
-            --rpm-yellow: #ffcc00;
-            --rpm-red: #ff0033;
-            --panel-bg: rgba(15, 23, 42, 0.85);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-user-select: none;
-            user-select: none;
+            --pad-black: #0e1014;
+            --pad-yellow: #e7e519;
+            --pad-darkgrey: #1b1e26;
+            --pad-lightgrey: #dadde3;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-family: 'IBM Plex Sans', sans-serif;
+            background-color: var(--pad-black);
+            color: var(--pad-lightgrey);
             display: flex;
-            flex-direction: column;
-            position: relative;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        body.hud-mode {
-            transform: scaleX(-1);
-        }
-
-        /* Full Screen Layout */
-        .dashboard-container {
+        .container {
             width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-            z-index: 10;
-            padding: 4vh 5vw;
+            max-width: 600px;
+            background-color: var(--pad-darkgrey);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-top: 4px solid var(--pad-yellow);
         }
 
-        /* Top Bar */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 20;
+        h1, h2 {
+            color: #ffffff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .rpm-display-text {
-            font-family: 'Teko', sans-serif;
-            font-size: 2.5rem;
-            line-height: 1;
-            letter-spacing: 0.05em;
-            color: var(--text-main);
-            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        .tagline {
+            color: var(--pad-yellow);
+            font-style: italic;
+            margin-bottom: 30px;
+            font-weight: 600;
         }
 
-        .rpm-display-text span {
-            font-size: 1.5rem;
-            color: var(--text-muted);
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--pad-lightgrey);
         }
 
-        .settings-btn {
-            background: transparent;
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            background-color: var(--pad-black);
+            border: 1px solid #333;
+            color: white;
+            font-family: 'IBM Plex Sans', sans-serif;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--pad-yellow);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--pad-yellow);
+            color: var(--pad-black);
             border: none;
-            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 16px;
             cursor: pointer;
-            transition: color 0.2s, transform 0.2s;
-        }
-
-        .settings-btn:active {
-            transform: scale(0.9);
-            color: var(--text-main);
-        }
-
-        /* Center Display */
-        .center-display {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-        }
-
-        .gauge-canvas-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        .speed-value-container {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 10vh; /* Offset to sit nicely in the arc */
-        }
-
-        .speed-number {
-            font-family: 'Teko', sans-serif;
-            font-size: 30vmin; /* Responsive massive font */
-            font-weight: 700;
-            line-height: 0.75;
-            color: var(--text-main);
-            text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
-            letter-spacing: -0.02em;
-        }
-
-        .speed-unit {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 2.5vmin;
-            font-weight: 700;
-            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.4em;
-            margin-top: 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
         }
 
-        /* Bottom Status Bar */
-        .bottom-bar {
+        button:hover {
+            background-color: #d1cf16;
+        }
+
+        /* Hilfsklassen zum Ein-/Ausblenden von Ansichten */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Projektstatus Fortschrittsbalken */
+        .progress-container {
+            margin-top: 30px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            opacity: 0.4;
+        }
+        .step.active {
+            opacity: 1;
+            color: var(--pad-yellow);
+        }
+        .step.completed {
+            opacity: 1;
+            color: #ffffff;
+        }
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: var(--pad-black);
+            border: 2px solid currentcolor;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        .step.active .step-circle {
+            background-color: var(--pad-yellow);
+            color: var(--pad-black);
+        }
+        .step.completed .step-circle {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        /* Admin Dashboard Listen */
+        .project-list {
+            margin-top: 30px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+        }
+        .project-item {
+            background-color: var(--pad-black);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--pad-yellow);
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-            z-index: 20;
-        }
-
-        .status-pill {
-            display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+        }
+        .project-code {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: var(--pad-yellow);
+            background: #000;
+            padding: 5px 10px;
+            border-radius: 4px;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #334155;
-            box-shadow: 0 0 0 rgba(0,0,0,0);
-            transition: all 0.3s;
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8em;
         }
-
-        .status-dot.active {
-            background: var(--rpm-green);
-            box-shadow: 0 0 15px var(--rpm-green);
+        .admin-link a {
+            color: #666;
+            text-decoration: none;
         }
-
-        /* Settings Modal (Glassmorphism Dark) */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+        .admin-link a:hover {
+            color: var(--pad-yellow);
         }
-
-        .modal-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
+        
+        .error {
+            color: #ff5252;
+            margin-bottom: 15px;
+            display: none;
         }
-
-        .modal-content {
-            background: var(--panel-bg);
-            border: 1px solid rgba(255,255,255,0.1);
-            width: 90vw; max-width: 450px;
-            border-radius: 24px;
-            padding: 30px;
-            display: flex; flex-direction: column; gap: 25px;
-            transform: scale(0.95);
-            transition: transform 0.3s;
-        }
-
-        .modal-overlay.open .modal-content { transform: scale(1); }
-
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .modal-header h3 {
-            font-family: 'Teko', sans-serif;
-            font-size: 2.2rem;
-            letter-spacing: 0.05em;
-            color: var(--text-main);
-        }
-
-        .close-btn {
-            background: rgba(255,255,255,0.1);
-            border: none; color: #fff;
-            width: 36px; height: 36px; border-radius: 50%;
-            font-size: 1.2rem; cursor: pointer;
-        }
-
-        .setting-group { display: flex; flex-direction: column; gap: 10px; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; }
-        .setting-row span, .setting-group label {
-            font-size: 1.1rem; font-weight: 600; color: #cbd5e1;
-        }
-
-        input[type="range"] {
-            width: 100%; height: 6px; background: #334155;
-            border-radius: 3px; outline: none; -webkit-appearance: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 20px; height: 20px;
-            background: #fff; border-radius: 50%; cursor: pointer;
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-
-        select, input[type="number"] {
-            background: rgba(0,0,0,0.5); border: 1px solid #475569;
-            color: #fff; padding: 12px; border-radius: 12px;
-            font-size: 1.1rem; font-family: 'Rajdhani', sans-serif;
-            font-weight: 600; outline: none;
-        }
-
-        .btn-primary {
-            background: #fff; color: #000; border: none;
-            padding: 16px; border-radius: 12px; font-family: 'Rajdhani', sans-serif;
-            font-weight: 700; font-size: 1.2rem; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 0.1em;
-        }
-
-        /* Toggle Switch */
-        .switch { position: relative; display: inline-block; width: 54px; height: 30px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider-switch {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #334155; transition: .3s; border-radius: 30px;
-        }
-        .slider-switch:before {
-            position: absolute; content: ""; height: 22px; width: 22px;
-            left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%;
-        }
-        input:checked + .slider-switch { background-color: var(--rpm-green); box-shadow: 0 0 15px rgba(0,255,102,0.4); }
-        input:checked + .slider-switch:before { transform: translateX(24px); }
-
-        /* Manual Control */
-        .manual-control-bar {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            width: 80%; max-width: 600px; background: rgba(15,23,42,0.8);
-            backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 20px;
-            display: flex; align-items: center; gap: 20px; z-index: 30;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .manual-control-bar.hidden { display: none; }
-        #manualSliderVal { font-family: 'Teko', sans-serif; font-size: 2rem; width: 50px; text-align: right; }
-
     </style>
 </head>
 <body>
 
-    <!-- Full Screen Container -->
-    <div class="dashboard-container">
-        
-        <!-- Top Info -->
-        <div class="top-bar">
-            <div class="rpm-display-text" id="rpmTextDisplay">0 <span>RPM</span></div>
-            <button class="settings-btn" id="openSettings">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2.2 2.2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            </button>
-        </div>
+    <div class="container">
+        <!-- HEADER -->
+        <h1 style="text-align: center; margin-bottom: 5px;">PAD AUTOMATION</h1>
+        <div style="text-align: center;" class="tagline">Individual Industrial Automation</div>
 
-        <!-- Center Tacho & Gauge Layer -->
-        <div class="center-display">
-            <div class="gauge-canvas-wrapper">
-                <canvas id="gaugeCanvas"></canvas>
-            </div>
-            <div class="speed-value-container">
-                <div class="speed-number" id="speedDisplay">0</div>
-                <div class="speed-unit">km/h</div>
+        <!-- VIEW 1: KUNDEN-LOGIN (Landing Page) -->
+        <div id="customer-login-view" class="view active">
+            <h2>Projekt Status Check</h2>
+            <p style="margin-bottom: 30px;">Bitte geben Sie Ihren 6-stelligen Projektcode ein, um den aktuellen Status einzusehen.</p>
+            
+            <div id="customer-error" class="error">Code nicht gefunden. Bitte prüfen Sie Ihre Eingabe.</div>
+            
+            <label>Projektcode</label>
+            <input type="text" id="customer-code-input" placeholder="z.B. A7X9P2" maxlength="6" style="text-transform: uppercase; text-align: center; font-size: 24px; letter-spacing: 5px;">
+            <button onclick="checkProjectStatus()">Status Abfragen</button>
+            
+            <div class="admin-link">
+                <a href="#" onclick="switchView('admin-login-view')">Interner Admin-Bereich</a>
             </div>
         </div>
 
-        <!-- Bottom Info -->
-        <div class="bottom-bar">
-            <div class="status-pill">
-                <div class="status-dot" id="gpsStatusDot"></div>
-                <span id="gpsStatusText">GPS OFF</span>
+        <!-- VIEW 2: KUNDEN-STATUS-ANSICHT -->
+        <div id="customer-status-view" class="view">
+            <h2>Projektübersicht</h2>
+            <h3 id="display-project-name" style="color: white; font-size: 24px; margin-bottom: 5px;">Projektname</h3>
+            <p style="margin-top:0;">Voraussichtliche Fertigstellung: <strong id="display-project-date" style="color: var(--pad-yellow);">Datum</strong></p>
+
+            <div class="progress-container">
+                <div class="step" id="step-1">
+                    <div class="step-circle">1</div>
+                    <div>I. Konzeption</div>
+                </div>
+                <div class="step" id="step-2">
+                    <div class="step-circle">2</div>
+                    <div>II. ENTWICKLUNG</div>
+                </div>
+                <div class="step" id="step-3">
+                    <div class="step-circle">3</div>
+                    <div>III. PRODUKTION</div>
+                </div>
+                <div class="step" id="step-4">
+                    <div class="step-circle">4</div>
+                    <div>IV. Begleitung</div>
+                </div>
+            </div>
+            
+            <button onclick="switchView('customer-login-view')" style="margin-top: 30px; background-color: #333; color: white;">Zurück zur Eingabe</button>
+        </div>
+
+        <!-- VIEW 3: ADMIN LOGIN -->
+        <div id="admin-login-view" class="view">
+            <h2>Admin Login</h2>
+            <div id="admin-error" class="error">Zugangsdaten inkorrekt.</div>
+            
+            <label>E-Mail</label>
+            <input type="email" id="admin-email" placeholder="E-Mail Adresse">
+            
+            <label>Passwort</label>
+            <input type="password" id="admin-password" placeholder="Passwort">
+            
+            <button onclick="adminLogin()">Einloggen</button>
+            
+            <div class="admin-link">
+                <a href="#" onclick="switchView('customer-login-view')">Zurück zur Kundenansicht</a>
             </div>
         </div>
-    </div>
 
-    <!-- Manual Simulator -->
-    <div class="manual-control-bar" id="manualBar">
-        <span style="font-family: 'Teko', sans-serif; font-size: 1.5rem; letter-spacing: 0.1em;">SIM</span>
-        <input type="range" id="manualSpeedSlider" min="0" max="200" value="0" style="flex:1;">
-        <span id="manualSliderVal">0</span>
-    </div>
+        <!-- VIEW 4: ADMIN DASHBOARD -->
+        <div id="admin-dashboard-view" class="view">
+            <h2>Neues Projekt anlegen</h2>
+            
+            <label>Projekt-/Kundenname</label>
+            <input type="text" id="new-project-name" placeholder="z.B. Siemens Montageanlage">
+            
+            <label>Voraussichtliche Fertigstellung</label>
+            <input type="date" id="new-project-date">
+            
+            <label>Aktueller Status</label>
+            <select id="new-project-status">
+                <option value="1">I. Konzeption</option>
+                <option value="2">II. ENTWICKLUNG</option>
+                <option value="3">III. PRODUKTION</option>
+                <option value="4">IV. Begleitung</option>
+            </select>
+            
+            <button onclick="createProject()">Projekt Erstellen & Code Generieren</button>
 
-    <!-- Settings Overlay -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>SYSTEM SETTINGS</h3>
-                <button class="close-btn" id="closeSettings">✕</button>
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-row">
-                    <span>GPS Telemetry</span>
-                    <label class="switch">
-                        <input type="checkbox" id="gpsToggle">
-                        <span class="slider-switch"></span>
-                    </label>
+            <div class="project-list">
+                <h3>Aktive Projekte</h3>
+                <div id="project-list-container">
+                    <!-- Projekte werden hier via JS geladen -->
                 </div>
             </div>
-
-            <div class="setting-group">
-                <label>Wheel Size (Inches)</label>
-                <div style="display: flex; gap: 10px;">
-                    <select id="tirePreset" style="flex: 2;">
-                        <option value="10">10" (Scooter)</option>
-                        <option value="19">19" (MX Rear)</option>
-                        <option value="21">21" (MX Front)</option>
-                        <option value="28" selected>28" (Street)</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                    <input type="number" id="customTireSize" value="28" min="4" max="50" style="flex: 1;" disabled>
-                </div>
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-row">
-                    <label>Redline Limit</label>
-                    <span id="redlineValText" style="font-family:'Teko', sans-serif; font-size: 1.8rem;">10000</span>
-                </div>
-                <!-- Requested Range: 10 to 10000 -->
-                <input type="range" id="redlineSlider" min="10" max="10000" step="10" value="10000">
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-row">
-                    <span>HUD Mirror View</span>
-                    <label class="switch">
-                        <input type="checkbox" id="hudToggle">
-                        <span class="slider-switch"></span>
-                    </label>
-                </div>
-            </div>
-
-            <button class="btn-primary" id="saveAndClose">CONFIRM</button>
+            
+            <button onclick="switchView('customer-login-view')" style="margin-top: 30px; background-color: #333; color: white;">Abmelden</button>
         </div>
+
     </div>
 
     <script>
-        // Core State
-        let currentSpeed = 0;
-        let displaySpeed = 0;
-        let currentRpm = 0;
-        let displayRpm = 0;
-        let maxRpmLimit = 10000;
-        let tireSizeInches = 28;
-        let gpsActive = false;
-        let gpsWatchId = null;
+        // --- LOGIK & DATENVERWALTUNG ---
 
-        // Elements
-        const speedDisplay = document.getElementById('speedDisplay');
-        const rpmTextDisplay = document.getElementById('rpmTextDisplay');
-        const canvas = document.getElementById('gaugeCanvas');
-        const ctx = canvas.getContext('2d');
-        const manualBar = document.getElementById('manualBar');
-        const manualSpeedSlider = document.getElementById('manualSpeedSlider');
-        const manualSliderVal = document.getElementById('manualSliderVal');
-        
-        const settingsModal = document.getElementById('settingsModal');
-        const openSettingsBtn = document.getElementById('openSettings');
-        const closeSettingsBtn = document.getElementById('closeSettings');
-        const saveAndCloseBtn = document.getElementById('saveAndClose');
-        const gpsToggle = document.getElementById('gpsToggle');
-        const hudToggle = document.getElementById('hudToggle');
-        const tirePreset = document.getElementById('tirePreset');
-        const customTireSize = document.getElementById('customTireSize');
-        const redlineSlider = document.getElementById('redlineSlider');
-        const redlineValText = document.getElementById('redlineValText');
-        const gpsStatusDot = document.getElementById('gpsStatusDot');
-        const gpsStatusText = document.getElementById('gpsStatusText');
+        // Initialisierung der "Datenbank" (LocalStorage)
+        let projects = JSON.parse(localStorage.getItem('pad_projects')) || {};
 
-        // High DPI Canvas Setup for Full Screen
-        function resizeCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        function calculateRPM(speedKmh, tireInches) {
-            if (speedKmh <= 0 || tireInches <= 0) return 0;
-            return (speedKmh * 1000 / 60) / (Math.PI * tireInches * 0.0254);
-        }
-
-        // Draw Advanced Segmented Neon Arc
-        function drawGauge() {
-            const rect = canvas.getBoundingClientRect();
-            const width = rect.width;
-            const height = rect.height;
-            ctx.clearRect(0, 0, width, height);
-
-            const centerX = width / 2;
-            const centerY = height * 0.65; // Position arc to frame the text
-            const radius = Math.min(width * 0.45, height * 0.55);
+        // Hilfsfunktion: Ansichten wechseln
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
             
-            const startAngle = Math.PI * 0.8;
-            const endAngle = Math.PI * 2.2;
-            const totalAngleSpan = endAngle - startAngle;
-
-            // Segment configuration
-            const totalSegments = 60; // Cool digital LED look
-            const segmentGap = 0.025; 
-            const segmentSpan = (totalAngleSpan / totalSegments) - segmentGap;
-
-            // 1. Draw Inactive Background Track (Dark transparent dashes)
-            for (let i = 0; i < totalSegments; i++) {
-                const a1 = startAngle + i * (segmentSpan + segmentGap);
-                const a2 = a1 + segmentSpan;
-                
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius, a1, a2);
-                ctx.lineWidth = 12;
-                ctx.lineCap = 'butt';
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-                ctx.shadowBlur = 0;
-                ctx.stroke();
-            }
-
-            // 2. Draw Active Glow Segments
-            const rpmRatio = Math.min(Math.max(displayRpm / maxRpmLimit, 0), 1);
-            if (rpmRatio > 0) {
-                const activeSegments = Math.floor(rpmRatio * totalSegments);
-                
-                for (let i = 0; i < activeSegments; i++) {
-                    const a1 = startAngle + i * (segmentSpan + segmentGap);
-                    const a2 = a1 + segmentSpan;
-                    const pointRatio = i / totalSegments;
-
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, radius, a1, a2);
-                    ctx.lineWidth = 14; 
-                    ctx.lineCap = 'round'; // rounded glowing LEDs
-                    
-                    // Color Logic
-                    let segmentColor;
-                    if (pointRatio < 0.65) {
-                        segmentColor = '#00ff66'; // Stark Green
-                    } else if (pointRatio < 0.85) {
-                        segmentColor = '#ffcc00'; // Warning Yellow
-                    } else {
-                        segmentColor = '#ff0033'; // Redline
-                    }
-
-                    ctx.strokeStyle = segmentColor;
-                    
-                    // Add Neon Glow
-                    ctx.shadowColor = segmentColor;
-                    ctx.shadowBlur = 15; // Intense glow
-
-                    ctx.stroke();
-                }
-            }
-            
-            // Reset shadow for other drawings
-            ctx.shadowBlur = 0;
+            // Fehlermeldungen zurücksetzen
+            document.getElementById('admin-error').style.display = 'none';
+            document.getElementById('customer-error').style.display = 'none';
         }
 
-        // 60FPS Render Loop
-        function update() {
-            displaySpeed += (currentSpeed - displaySpeed) * 0.15;
-            displayRpm += (currentRpm - displayRpm) * 0.15;
-
-            speedDisplay.textContent = Math.round(displaySpeed);
-            rpmTextDisplay.innerHTML = `${Math.round(displayRpm)} <span>RPM</span>`;
-
-            drawGauge();
-            requestAnimationFrame(update);
-        }
-        requestAnimationFrame(update);
-
-        // --- Event Listeners & Logic ---
-
-        manualSpeedSlider.addEventListener('input', (e) => {
-            if (!gpsActive) {
-                currentSpeed = parseFloat(e.target.value);
-                manualSliderVal.textContent = Math.round(currentSpeed);
-                currentRpm = calculateRPM(currentSpeed, tireSizeInches);
+        // Hilfsfunktion: 6-stelligen Code generieren
+        function generateCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
             }
-        });
+            // Sicherstellen, dass Code einzigartig ist
+            return projects[code] ? generateCode() : code; 
+        }
 
-        const toggleModal = (show) => {
-            if(show) settingsModal.classList.add('open');
-            else settingsModal.classList.remove('open');
-        };
-        openSettingsBtn.addEventListener('click', () => toggleModal(true));
-        closeSettingsBtn.addEventListener('click', () => toggleModal(false));
-        saveAndCloseBtn.addEventListener('click', () => toggleModal(false));
+        // --- ADMIN BEREICH ---
 
-        tirePreset.addEventListener('change', (e) => {
-            if (e.target.value === 'custom') {
-                customTireSize.disabled = false;
-                customTireSize.focus();
-                tireSizeInches = parseFloat(customTireSize.value) || 28;
+        function adminLogin() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+
+            // Die gewünschten Zugangsdaten
+            if (email === 'dumperth@aol.com' && password === 'Padautomation123!?') {
+                document.getElementById('admin-email').value = '';
+                document.getElementById('admin-password').value = '';
+                renderProjectList();
+                switchView('admin-dashboard-view');
             } else {
-                customTireSize.disabled = true;
-                tireSizeInches = parseFloat(e.target.value);
-                customTireSize.value = tireSizeInches;
+                document.getElementById('admin-error').style.display = 'block';
             }
-            currentRpm = calculateRPM(currentSpeed, tireSizeInches);
-        });
+        }
 
-        customTireSize.addEventListener('input', (e) => {
-            tireSizeInches = parseFloat(e.target.value) || 28;
-            currentRpm = calculateRPM(currentSpeed, tireSizeInches);
-        });
+        function createProject() {
+            const name = document.getElementById('new-project-name').value;
+            const date = document.getElementById('new-project-date').value;
+            const status = document.getElementById('new-project-status').value;
 
-        // Dynamic Redline Limit (10 to 10000)
-        redlineSlider.addEventListener('input', (e) => {
-            maxRpmLimit = parseInt(e.target.value);
-            redlineValText.textContent = maxRpmLimit;
-        });
-
-        hudToggle.addEventListener('change', (e) => {
-            if (e.target.checked) document.body.classList.add('hud-mode');
-            else document.body.classList.remove('hud-mode');
-        });
-
-        gpsToggle.addEventListener('change', (e) => {
-            gpsActive = e.target.checked;
-            if (gpsActive) startGpsTracking();
-            else stopGpsTracking();
-        });
-
-        function startGpsTracking() {
-            if (!navigator.geolocation) {
-                alert('GPS Not Supported.');
-                gpsToggle.checked = false;
-                gpsActive = false;
+            if (!name || !date) {
+                alert('Bitte füllen Sie Name und Datum aus.');
                 return;
             }
 
-            gpsStatusText.textContent = 'GPS SEARCHING';
-            manualBar.classList.add('hidden');
+            const code = generateCode();
+            
+            // Projekt im LocalStorage speichern
+            projects[code] = {
+                name: name,
+                date: date,
+                status: parseInt(status)
+            };
+            localStorage.setItem('pad_projects', JSON.stringify(projects));
 
-            const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+            // Formular zurücksetzen
+            document.getElementById('new-project-name').value = '';
+            document.getElementById('new-project-date').value = '';
+            document.getElementById('new-project-status').value = '1';
 
-            gpsWatchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    gpsStatusDot.classList.add('active');
-                    gpsStatusText.textContent = 'GPS LINKED';
-                    
-                    const speedMs = position.coords.speed;
-                    currentSpeed = (speedMs !== null && speedMs >= 0) ? (speedMs * 3.6) : 0;
-                    currentRpm = calculateRPM(currentSpeed, tireSizeInches);
-                },
-                (error) => {
-                    gpsStatusDot.classList.remove('active');
-                    gpsStatusText.textContent = 'NO SIGNAL';
-                },
-                options
-            );
+            renderProjectList();
+            alert(`Projekt erfolgreich erstellt!\nDer Code für den Kunden lautet: ${code}`);
         }
 
-        function stopGpsTracking() {
-            if (gpsWatchId !== null) {
-                navigator.geolocation.clearWatch(gpsWatchId);
-                gpsWatchId = null;
+        function updateProjectStatus(code, newStatus) {
+            if(projects[code]) {
+                projects[code].status = parseInt(newStatus);
+                localStorage.setItem('pad_projects', JSON.stringify(projects));
+                alert('Status aktualisiert!');
             }
-            gpsStatusDot.classList.remove('active');
-            gpsStatusText.textContent = 'GPS OFF';
-            manualBar.classList.remove('hidden');
+        }
+
+        function deleteProject(code) {
+            if(confirm('Möchten Sie dieses Projekt wirklich löschen?')) {
+                delete projects[code];
+                localStorage.setItem('pad_projects', JSON.stringify(projects));
+                renderProjectList();
+            }
+        }
+
+        function renderProjectList() {
+            const container = document.getElementById('project-list-container');
+            container.innerHTML = '';
+
+            for (const [code, data] of Object.entries(projects)) {
+                const div = document.createElement('div');
+                div.className = 'project-item';
+                div.innerHTML = `
+                    <div>
+                        <strong>${data.name}</strong><br>
+                        <select onchange="updateProjectStatus('${code}', this.value)" style="margin-bottom: 0; margin-top: 5px; padding: 5px; width: auto; font-size: 12px;">
+                            <option value="1" ${data.status === 1 ? 'selected' : ''}>I. Konzeption</option>
+                            <option value="2" ${data.status === 2 ? 'selected' : ''}>II. ENTWICKLUNG</option>
+                            <option value="3" ${data.status === 3 ? 'selected' : ''}>III. PRODUKTION</option>
+                            <option value="4" ${data.status === 4 ? 'selected' : ''}>IV. Begleitung</option>
+                        </select>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="project-code">${code}</span><br>
+                        <button onclick="deleteProject('${code}')" style="background: transparent; color: #ff5252; padding: 0; margin-top: 5px; font-size: 12px; width: auto; font-weight: normal;">Löschen</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+            
+            if(Object.keys(projects).length === 0) {
+                container.innerHTML = '<p style="color: #666;">Noch keine Projekte vorhanden.</p>';
+            }
+        }
+
+        // --- KUNDEN BEREICH ---
+
+        function checkProjectStatus() {
+            const codeInput = document.getElementById('customer-code-input').value.toUpperCase().trim();
+            const project = projects[codeInput];
+
+            if (project) {
+                // Projekt gefunden -> Daten in die Ansicht laden
+                document.getElementById('display-project-name').innerText = project.name;
+                
+                // Datum formatieren (von YYYY-MM-DD zu DD.MM.YYYY)
+                const dateObj = new Date(project.date);
+                const formattedDate = dateObj.toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                document.getElementById('display-project-date').innerText = formattedDate;
+
+                // Fortschrittsbalken aktualisieren
+                for (let i = 1; i <= 4; i++) {
+                    const stepEl = document.getElementById(`step-${i}`);
+                    stepEl.classList.remove('active', 'completed');
+                    
+                    if (i < project.status) {
+                        stepEl.classList.add('completed');
+                        stepEl.querySelector('.step-circle').innerHTML = '&#10003;'; // Häkchen
+                    } else if (i === project.status) {
+                        stepEl.classList.add('active');
+                        stepEl.querySelector('.step-circle').innerHTML = i;
+                    } else {
+                        stepEl.querySelector('.step-circle').innerHTML = i;
+                    }
+                }
+
+                document.getElementById('customer-code-input').value = '';
+                switchView('customer-status-view');
+            } else {
+                // Code falsch
+                document.getElementById('customer-error').style.display = 'block';
+            }
         }
     </script>
 </body>
