@@ -1,727 +1,1407 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAD Automation - Projekt Status Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>VOLT ROUTE - E-Scooter Reichweiten- & Routenplaner Pro</title>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            50: '#ecfeff',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                        },
+                        violet: {
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                        },
+                        volt: {
+                            500: '#22c55e',
+                            400: '#4ade80',
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 15px rgba(6, 182, 212, 0.4)' },
+                            '50%': { boxShadow: '0 0 25px rgba(139, 92, 246, 0.7)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+    <!-- External Libraries JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        /* CSS VARIABLEN - Exakt nach PAD Brand Guidelines */
-        :root {
-            --pad-black: #0e1014;
-            --pad-yellow: #e7e519;
-            --pad-darkgrey: #1b1e26;
-            --pad-lightgrey: #dadde3;
-            --grid-color: rgba(255, 255, 255, 0.04);
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(6, 182, 212, 0.5); }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
 
-        /* GRUNDLAYOUT & TYPOGRAFIE */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'IBM Plex Sans', sans-serif;
-            background-color: var(--pad-black);
-            color: var(--pad-lightgrey);
-            /* Blueprint Grid Pattern */
-            background-image: 
-                linear-gradient(var(--grid-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-            background-size: 25px 25px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease-in-out;
+        }
+        .glass-card:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            background: rgba(30, 41, 59, 0.7);
         }
 
-        h1, h2, h3, h4 {
-            color: #ffffff;
-            margin: 0;
-            text-transform: uppercase;
-            font-weight: 700;
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f8fafc;
+            transition: all 0.2s;
         }
-
-        /* HEADER / NAVIGATION */
-        header {
-            padding: 30px 60px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 4px solid var(--pad-yellow);
-            background-color: rgba(14, 16, 20, 0.9);
-            backdrop-filter: blur(5px);
-            z-index: 100;
-        }
-
-        .logo {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--pad-yellow);
-            display: flex;
-            align-items: center;
-            letter-spacing: 2px;
-        }
-        
-        .logo span {
-            font-size: 12px;
-            color: var(--pad-lightgrey);
-            letter-spacing: 5px;
-            margin-left: 10px;
-            margin-top: 8px;
-        }
-
-        nav {
-            display: flex;
-            gap: 40px;
-        }
-
-        nav a {
-            color: var(--pad-lightgrey);
-            text-decoration: none;
-            font-size: 14px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            transition: color 0.3s ease;
-            cursor: pointer;
-        }
-
-        nav a:hover, nav a.active {
-            color: #ffffff;
-        }
-
-        .nav-dot {
-            width: 8px;
-            height: 8px;
-            background-color: transparent;
-            border-radius: 50%;
-            margin-right: 10px;
-            box-shadow: 0 0 10px transparent;
-            transition: all 0.3s ease;
-        }
-
-        nav a.active .nav-dot {
-            background-color: var(--pad-yellow);
-            box-shadow: 0 0 10px var(--pad-yellow);
-        }
-
-        /* MAIN CONTENT BEREICH */
-        main {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 60px;
-            position: relative;
-        }
-
-        .view {
-            display: none;
-            width: 100%;
-            max-width: 1200px;
-            animation: fadeIn 0.6s ease forwards;
-        }
-
-        .view.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- KUNDEN LOGIN UI --- */
-        .hero-title {
-            font-size: 48px;
-            letter-spacing: 12px; /* Typisches PAD Spacing */
-            text-align: center;
-            margin-bottom: 60px;
-            line-height: 1.4;
-        }
-
-        .login-box {
-            background-color: var(--pad-darkgrey);
-            padding: 50px;
-            max-width: 500px;
-            margin: 0 auto;
-            border-left: 4px solid var(--pad-yellow);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-
-        .input-group {
-            margin-bottom: 30px;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 12px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            color: #888;
-        }
-
-        input[type="text"], input[type="email"], input[type="password"], input[type="date"], select {
-            width: 100%;
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid #444;
-            padding: 15px 0;
-            font-size: 18px;
-            color: #fff;
-            font-family: 'IBM Plex Sans', sans-serif;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        input:focus, select:focus {
+        .glass-input:focus {
+            border-color: #06b6d4;
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
             outline: none;
-            border-bottom-color: var(--pad-yellow);
         }
 
-        /* Spezifisch für den Projektcode */
-        #customer-code-input {
-            font-size: 32px;
-            letter-spacing: 10px;
-            text-align: center;
-            text-transform: uppercase;
-            font-weight: 600;
+        /* Leaflet Map Overrides */
+        #map { width: 100%; height: 100%; background: #020617; }
+        .leaflet-routing-container { display: none !important; }
+        .leaflet-control-zoom { border: none !important; margin-right: 16px !important; margin-top: 16px !important; }
+        .leaflet-control-zoom a {
+            background: rgba(15, 23, 42, 0.85) !important;
+            color: #22d3ee !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            backdrop-filter: blur(8px);
+            border-radius: 12px !important;
+            margin-bottom: 6px !important;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3) !important;
+        }
+        .leaflet-control-zoom a:hover { background: rgba(30, 41, 59, 0.95) !important; color: #fff !important; }
+
+        /* Animated Pulsing Pin */
+        .scooter-marker-icon {
+            filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.8));
         }
 
-        button {
-            width: 100%;
-            padding: 18px;
-            background-color: var(--pad-yellow);
-            color: var(--pad-black);
-            border: none;
-            font-weight: 700;
-            font-size: 14px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #06b6d4;
             cursor: pointer;
-            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+            transition: transform 0.1s;
         }
-
-        button:hover {
-            background-color: #ffffff;
-            box-shadow: 0 0 20px rgba(231, 229, 25, 0.4);
-        }
-
-        /* --- KUNDEN STATUS UI (WORKFLOW GLOW EFFEKT) --- */
-        .status-header {
-            text-align: center;
-            margin-bottom: 80px;
-        }
-
-        .status-header h2 {
-            font-size: 36px;
-            color: var(--pad-yellow);
-            margin-bottom: 10px;
-        }
-
-        .status-header p {
-            font-size: 18px;
-            letter-spacing: 1px;
-        }
-
-        .workflow-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 40px;
-            position: relative;
-            margin-bottom: 60px;
-        }
-
-        .step-card {
-            position: relative;
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        /* Der leuchtende Ball im Hintergrund */
-        .step-glow {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(circle, rgba(231, 229, 25, 0.4) 0%, rgba(14, 16, 20, 0) 70%);
-            opacity: 0; /* Standardmäßig aus */
-            transition: opacity 0.5s ease;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .step-card.active .step-glow {
-            opacity: 1;
-            background: radial-gradient(circle, rgba(231, 229, 25, 0.8) 0%, rgba(14, 16, 20, 0) 70%);
-        }
-
-        .step-card.completed .step-glow {
-            opacity: 0.3;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(14, 16, 20, 0) 70%);
-        }
-
-        .step-card h4 {
-            position: relative;
-            z-index: 2;
-            font-size: 20px;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-            color: #555;
-            transition: color 0.3s ease;
-        }
-
-        .step-card.active h4 { color: #ffffff; }
-        .step-card.completed h4 { color: var(--pad-lightgrey); }
-
-        .step-icon {
-            position: relative;
-            z-index: 2;
-            font-size: 24px;
-            font-weight: 300;
-            color: #555;
-        }
-
-        .step-card.active .step-icon { color: var(--pad-yellow); font-weight: 700; }
-        .step-card.completed .step-icon { color: #ffffff; }
-
-        /* --- ADMIN DASHBOARD UI --- */
-        .admin-layout {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 50px;
-            align-items: start;
-        }
-
-        .admin-panel {
-            background-color: var(--pad-darkgrey);
-            padding: 40px;
-            border-top: 4px solid var(--pad-yellow);
-        }
-
-        .data-table-container {
-            background-color: var(--pad-darkgrey);
-            padding: 40px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            font-size: 12px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #888;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #333;
-        }
-
-        td {
-            padding: 20px 0;
-            border-bottom: 1px solid #222;
-            vertical-align: middle;
-        }
-
-        .code-badge {
-            background-color: #000;
-            color: var(--pad-yellow);
-            padding: 6px 12px;
-            font-family: monospace;
-            font-size: 16px;
-            letter-spacing: 2px;
-            border-radius: 4px;
-            border: 1px solid #333;
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 11px;
-            background-color: transparent;
-            color: #ff5252;
-            border: 1px solid #ff5252;
-            width: auto;
-        }
-        
-        .btn-small:hover {
-            background-color: #ff5252;
-            color: white;
-            box-shadow: none;
-        }
-
-        .status-select {
-            background-color: #000;
-            border: 1px solid #333;
-            padding: 8px;
-            font-size: 14px;
-            width: 100%;
-            max-width: 200px;
-        }
-
-        .error-msg {
-            color: #ff5252;
-            font-size: 14px;
-            margin-bottom: 20px;
-            display: none;
-            border-left: 2px solid #ff5252;
-            padding-left: 10px;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 992px) {
-            .admin-layout { grid-template-columns: 1fr; }
-            .workflow-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
-            .hero-title { font-size: 32px; letter-spacing: 6px; }
-        }
-        @media (max-width: 600px) {
-            .workflow-grid { grid-template-columns: 1fr; }
-            header { flex-direction: column; gap: 20px; padding: 20px; }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col overflow-hidden select-none">
 
-    <!-- GEMEINSAME NAVIGATION -->
-    <header>
-        <div class="logo">
-            <!-- Icon/Gear Approximation -->
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px; color: var(--pad-yellow);">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-            PAD <span>AUTOMATION</span>
+    <!-- Header Navbar -->
+    <header class="h-16 border-b border-white/10 glass-panel z-30 px-4 md:px-6 flex items-center justify-between relative">
+        <!-- Logo & Branding -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyber-500 to-violet-600 flex items-center justify-center shadow-lg shadow-cyber-500/20 animate-pulse-glow">
+                <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyber-400 bg-clip-text text-transparent">VOLT ROUTE</span>
+                    <span class="text-[10px] font-semibold bg-cyber-500/20 text-cyber-400 px-2 py-0.5 rounded-full border border-cyber-500/30">PRO v2.5</span>
+                </div>
+                <p class="text-[11px] text-slate-400 hidden sm:block">Intelligenter E-Scooter Reichweiten- & Routenplaner</p>
+            </div>
         </div>
-        <nav>
-            <a id="nav-login" class="active" onclick="showView('login-view')"><div class="nav-dot"></div> KUNDEN LOGIN</a>
-            <a id="nav-admin" onclick="showView('admin-login-view')"><div class="nav-dot"></div> SYSTEM ADMIN</a>
-        </nav>
+
+        <!-- Header Widgets & Quick Actions -->
+        <div class="flex items-center gap-2 md:gap-4">
+            <!-- Simulated Weather Badge -->
+            <div id="weather-badge" class="hidden lg:flex items-center gap-2 bg-slate-900/60 border border-white/10 px-3 py-1.5 rounded-xl text-xs text-slate-300">
+                <i data-lucide="cloud-sun" class="w-4 h-4 text-amber-400"></i>
+                <span id="header-temp-val">20°C</span>
+                <span class="text-slate-600">|</span>
+                <i data-lucide="wind" class="w-4 h-4 text-cyber-400"></i>
+                <span id="header-wind-val">10 km/h</span>
+            </div>
+
+            <!-- Battery Quick Indicator -->
+            <div class="hidden sm:flex items-center gap-2 bg-slate-900/60 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-mono">
+                <i data-lucide="battery-charging" class="w-4 h-4 text-volt-400"></i>
+                <span id="header-battery-val" class="text-volt-400 font-bold">100%</span>
+                <span class="text-slate-400" id="header-range-est">~45 km</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <button id="open-custom-scooter-modal" class="glass-card hover:border-cyber-500/50 text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 font-medium transition">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-cyber-400"></i>
+                <span class="hidden md:inline">Custom Scooter</span>
+            </button>
+
+            <button id="export-gpx-btn" class="glass-card hover:border-violet-500/50 text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 font-medium transition opacity-50 cursor-not-allowed" disabled>
+                <i data-lucide="download" class="w-4 h-4 text-violet-400"></i>
+                <span class="hidden md:inline">GPX Export</span>
+            </button>
+
+            <button id="save-route-btn" class="bg-gradient-to-r from-cyber-500 to-violet-600 hover:from-cyber-600 hover:to-violet-700 text-white text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 font-semibold shadow-md shadow-cyber-500/20 transition">
+                <i data-lucide="bookmark" class="w-4 h-4"></i>
+                <span class="hidden md:inline">Speichern</span>
+            </button>
+        </div>
     </header>
 
-    <main>
-        
-        <!-- VIEW 1: KUNDEN LOGIN -->
-        <div id="login-view" class="view active">
-            <h1 class="hero-title">P R O J E K T<br>S T A T U S</h1>
+    <!-- Main Workspace Container -->
+    <main class="flex-1 flex relative overflow-hidden">
+
+        <!-- Left Control Sidebar -->
+        <aside id="sidebar" class="w-full md:w-[420px] glass-panel z-20 flex flex-col border-r border-white/10 h-full overflow-hidden transition-all duration-300 relative">
             
-            <div class="login-box">
-                <div id="login-error" class="error-msg">PROJEKTCODE UNBEKANNT. BITTE PRÜFEN.</div>
-                <div class="input-group">
-                    <label>6-Stelliger Autorisierungscode</label>
-                    <input type="text" id="customer-code-input" placeholder="------" maxlength="6" autocomplete="off">
-                </div>
-                <button onclick="checkStatus()">Systemabfrage Starten</button>
+            <!-- Sidebar Navigation Tabs -->
+            <div class="flex border-b border-white/10 bg-slate-900/40 p-1 gap-1">
+                <button data-tab="tab-scooter" class="tab-btn active flex-1 py-2 text-xs font-semibold rounded-lg text-cyber-400 bg-slate-800/80 border border-cyber-500/30 flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Setup
+                </button>
+                <button data-tab="tab-route" class="tab-btn flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Route
+                </button>
+                <button data-tab="tab-stats" class="tab-btn flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Analyse
+                </button>
+                <button data-tab="tab-directions" class="tab-btn flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="navigation" class="w-3.5 h-3.5"></i> Wege
+                </button>
             </div>
-        </div>
 
-        <!-- VIEW 2: KUNDEN STATUS (WORKFLOW) -->
-        <div id="status-view" class="view">
-            <button onclick="showView('login-view')" style="width: auto; background: transparent; color: #fff; padding: 0; margin-bottom: 40px; font-size: 12px;">< ZURÜCK</button>
+            <!-- Tab Contents Container -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
+
+                <!-- TAB 1: SCOOTER & PARAMS SETUP -->
+                <div id="tab-scooter" class="tab-content space-y-5">
+                    
+                    <!-- Scooter Model Selector -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                            <span>E-Scooter Modell</span>
+                            <span id="scooter-battery-wh" class="text-cyber-400 font-mono text-[11px]">551 Wh (36V)</span>
+                        </label>
+                        <div class="relative">
+                            <select id="scooter-preset-select" class="w-full glass-input rounded-xl px-3 py-2.5 text-sm appearance-none pr-8 cursor-pointer font-medium">
+                                <option value="ninebot_max_g2">Ninebot MAX G2 D (551Wh, 24.3kg)</option>
+                                <option value="epowerfun_epf2">ePowerFun ePF-2 XT 600 (600Wh, 20.5kg)</option>
+                                <option value="kukirin_g2_pro">KuKirin G2 Pro (720Wh, 25kg)</option>
+                                <option value="vmax_vx2_pro">VMAX VX2 Pro (612Wh, 20.4kg)</option>
+                                <option value="xiaomi_4_pro">Xiaomi Scooter 4 Pro (446Wh, 17kg)</option>
+                                <option value="custom" class="text-cyber-400 font-bold">+ Eigener Custom Scooter...</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
+                        </div>
+                    </div>
+
+                    <!-- Driving Mode Selection -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-300 uppercase tracking-wider">Fahrmodus</label>
+                        <div class="grid grid-[#3] grid-cols-3 gap-2">
+                            <button data-mode="eco" class="mode-btn glass-card py-2 px-3 rounded-xl text-center border border-white/10 hover:border-cyber-500/40">
+                                <span class="block text-xs font-bold text-slate-200">Eco</span>
+                                <span class="text-[10px] text-slate-400">15 km/h</span>
+                            </button>
+                            <button data-mode="drive" class="mode-btn glass-card py-2 px-3 rounded-xl text-center border border-cyber-500 bg-cyber-500/10">
+                                <span class="block text-xs font-bold text-cyber-400">Drive</span>
+                                <span class="text-[10px] text-slate-300">20 km/h</span>
+                            </button>
+                            <button data-mode="sport" class="mode-btn glass-card py-2 px-3 rounded-xl text-center border border-white/10 hover:border-cyber-500/40">
+                                <span class="block text-xs font-bold text-slate-200">Sport</span>
+                                <span class="text-[10px] text-slate-400">22 km/h</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Environment & Physics Sliders Card -->
+                    <div class="glass-card rounded-2xl p-4 space-y-4 border border-white/10">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                            <span class="text-xs font-bold text-cyber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i data-lucide="gauge" class="w-4 h-4"></i> Umwelt & Beladung
+                            </span>
+                            <span class="text-[10px] text-slate-400">Physik-Modell</span>
+                        </div>
+
+                        <!-- Rider Weight -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300">Fahrergewicht</span>
+                                <span id="val-rider-weight" class="font-mono text-cyber-400 font-semibold">75 kg</span>
+                            </div>
+                            <input type="range" id="input-rider-weight" min="40" max="140" value="75" class="w-full">
+                        </div>
+
+                        <!-- Cargo Weight -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300">Gepäck / Rucksack</span>
+                                <span id="val-cargo-weight" class="font-mono text-cyber-400 font-semibold">5 kg</span>
+                            </div>
+                            <input type="range" id="input-cargo-weight" min="0" max="30" value="5" class="w-full">
+                        </div>
+
+                        <!-- Temperature (Battery Loss Simulator) -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 flex items-center gap-1">
+                                    Außentemperatur
+                                    <i data-lucide="info" class="w-3 h-3 text-slate-500" title="Kalte Temperaturen verringern die Akku-Kapazität"></i>
+                                </span>
+                                <span id="val-temperature" class="font-mono text-amber-400 font-semibold">20 °C</span>
+                            </div>
+                            <input type="range" id="input-temperature" min="-10" max="35" value="20" class="w-full">
+                            <p id="temp-impact-note" class="text-[10px] text-slate-400">100% Akkukapazität verfügbar</p>
+                        </div>
+
+                        <!-- Headwind / Wind Speed -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300">Gegenwind</span>
+                                <span id="val-wind" class="font-mono text-cyber-400 font-semibold">10 km/h</span>
+                            </div>
+                            <input type="range" id="input-wind" min="0" max="40" value="10" class="w-full">
+                        </div>
+
+                        <!-- Road Surface Dropdown -->
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-300 block">Straßenbelag / Untergrund</label>
+                            <select id="surface-select" class="w-full glass-input rounded-xl px-3 py-2 text-xs appearance-none cursor-pointer">
+                                <option value="asphalt">Glatter Asphalt (Rollwiderstand C_r = 0.012)</option>
+                                <option value="rough_asphalt" selected>Rauer Asphalt / Pflaster (C_r = 0.020)</option>
+                                <option value="cobblestone">Kopfsteinpflaster (C_r = 0.030)</option>
+                                <option value="gravel">Schotter / Waldweg (C_r = 0.040)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: ROUTE INPUT -->
+                <div id="tab-route" class="tab-content hidden space-y-4">
+                    <div class="space-y-3">
+                        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block">Wegpunkte Festlegen</span>
+
+                        <!-- Start Point Input -->
+                        <div class="relative">
+                            <div class="absolute left-3 top-3 w-2.5 h-2.5 rounded-full bg-volt-500 ring-4 ring-volt-500/20"></div>
+                            <input type="text" id="start-search-input" placeholder="Startpunkt eingeben (z.B. Marienplatz, München)" class="w-full glass-input rounded-xl pl-8 pr-10 py-2.5 text-xs">
+                            <button id="set-start-map-btn" class="absolute right-2 top-2 p-1 text-slate-400 hover:text-volt-400 transition" title="Auf Karte klicken">
+                                <i data-lucide="crosshair" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <!-- Waypoint / Stop Input -->
+                        <div class="relative">
+                            <div class="absolute left-3 top-3 w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-amber-400/20"></div>
+                            <input type="text" id="waypoint-search-input" placeholder="Optionale Zwischenstopps..." class="w-full glass-input rounded-xl pl-8 pr-10 py-2.5 text-xs">
+                            <button id="add-waypoint-btn" class="absolute right-2 top-2 p-1 text-slate-400 hover:text-amber-400 transition" title="Stopp hinzufügen">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <!-- Destination Input -->
+                        <div class="relative">
+                            <div class="absolute left-3 top-3 w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-red-500/20"></div>
+                            <input type="text" id="end-search-input" placeholder="Zielort eingeben (z.B. Englischer Garten)" class="w-full glass-input rounded-xl pl-8 pr-10 py-2.5 text-xs">
+                            <button id="set-end-map-btn" class="absolute right-2 top-2 p-1 text-slate-400 hover:text-red-400 transition" title="Auf Karte klicken">
+                                <i data-lucide="crosshair" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 pt-2">
+                        <button id="calc-route-btn" class="flex-1 bg-gradient-to-r from-cyber-500 to-violet-600 hover:from-cyber-600 hover:to-violet-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyber-500/20 transition">
+                            <i data-lucide="route" class="w-4 h-4"></i> Route Berechnen
+                        </button>
+                        <button id="clear-route-btn" class="glass-card hover:border-red-500/40 text-slate-300 py-2.5 px-3 rounded-xl text-xs flex items-center justify-center transition">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
+                        </button>
+                    </div>
+
+                    <!-- Presets / Quick Locations -->
+                    <div class="pt-2">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">Beispiel-Routen München</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button data-preset="m_city" class="preset-route-btn text-[11px] glass-card px-2.5 py-1 rounded-lg text-slate-300 hover:text-cyber-400 border border-white/10">City Loop (12km)</button>
+                            <button data-preset="m_isar" class="preset-route-btn text-[11px] glass-card px-2.5 py-1 rounded-lg text-slate-300 hover:text-cyber-400 border border-white/10">Isar-Trail (24km)</button>
+                            <button data-preset="m_starnberg" class="preset-route-btn text-[11px] glass-card px-2.5 py-1 rounded-lg text-slate-300 hover:text-cyber-400 border border-white/10">Starnberg Tour (38km)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: ROUTE STATS & ANALYSIS -->
+                <div id="tab-stats" class="tab-content hidden space-y-4">
+                    <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block">Routen-Analyse</span>
+
+                    <!-- Main Battery Status Card -->
+                    <div class="glass-card rounded-2xl p-4 space-y-3 border border-white/10 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-400">Verbleibender Akku am Ziel</span>
+                            <span id="stat-battery-percent" class="text-2xl font-extrabold font-mono text-volt-400">-- %</span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden p-0.5 border border-white/10">
+                            <div id="stat-battery-bar" class="h-full bg-gradient-to-r from-volt-500 to-cyber-400 rounded-full w-0 transition-all duration-700"></div>
+                        </div>
+
+                        <div class="flex justify-between text-[11px] text-slate-400 pt-1">
+                            <span>Verbrauch: <strong id="stat-wh-used" class="text-slate-200">0 Wh</strong></span>
+                            <span>Effizienz: <strong id="stat-wh-km" class="text-slate-200">0 Wh/km</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="glass-card p-3 rounded-xl space-y-1">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Gesamtdistanz</span>
+                            <div class="text-lg font-bold font-mono text-slate-100" id="stat-distance">0.0 km</div>
+                        </div>
+                        <div class="glass-card p-3 rounded-xl space-y-1">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Fahrzeit (~20km/h)</span>
+                            <div class="text-lg font-bold font-mono text-slate-100" id="stat-duration">0 min</div>
+                        </div>
+                        <div class="glass-card p-3 rounded-xl space-y-1">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Höhenmeter Auf</span>
+                            <div class="text-lg font-bold font-mono text-amber-400" id="stat-ele-up">+0 m</div>
+                        </div>
+                        <div class="glass-card p-3 rounded-xl space-y-1">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Höhenmeter Ab</span>
+                            <div class="text-lg font-bold font-mono text-cyber-400" id="stat-ele-down">-0 m</div>
+                        </div>
+                    </div>
+
+                    <!-- Charging Stop Requirement Notification Box -->
+                    <div id="charging-stop-box" class="glass-card p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 hidden space-y-1">
+                        <div class="flex items-center gap-2 text-amber-400 text-xs font-bold">
+                            <i data-lucide="battery-warning" class="w-4 h-4"></i> Ladestopp Benötigt!
+                        </div>
+                        <p class="text-[11px] text-slate-300" id="charging-stop-text">
+                            Der Akku reicht voraussichtlich nicht bis zum Ziel. Es wird ein Zwischenstopp von ca. 45 Min empfohlen.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 4: TURN-BY-TURN DIRECTIONS -->
+                <div id="tab-directions" class="tab-content hidden space-y-3">
+                    <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block">Abbiegehinweise</span>
+                    <div id="directions-list" class="space-y-2 text-xs">
+                        <p class="text-slate-500 text-center py-8">Berechne erst eine Route, um Abbiegehinweise anzuzeigen.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Info / Trigger Simulation Button -->
+            <div class="p-4 border-t border-white/10 bg-slate-900/60 flex items-center justify-between">
+                <button id="start-simulation-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-cyber-400 border border-cyber-500/30 font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition opacity-50 cursor-not-allowed" disabled>
+                    <i data-lucide="play" class="w-4 h-4 fill-cyber-400"></i> Trip-Simulation Starten
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Section: Leaflet Map & Elevation Chart -->
+        <section class="flex-1 flex flex-col relative z-0 h-full">
             
-            <div class="status-header">
-                <h2 id="display-name">PROJEKTNAME</h2>
-                <p>Voraussichtliche Fertigstellung: <span id="display-date" style="color: var(--pad-yellow); font-weight: 700;">--.--.----</span></p>
-            </div>
+            <!-- Map Container -->
+            <div class="flex-1 relative">
+                <div id="map"></div>
 
-            <div class="workflow-grid">
-                <div class="step-card" id="step-1">
-                    <div class="step-glow"></div>
-                    <h4>I. KONZEPTION</h4>
-                    <div class="step-icon" id="icon-1">+</div>
+                <!-- Floating Map Controls Overlay (Top Right) -->
+                <div class="absolute top-4 right-14 z-10 flex flex-col gap-2">
+                    <button id="btn-toggle-range-circle" class="glass-panel p-2.5 rounded-xl text-slate-300 hover:text-cyber-400 transition shadow-lg" title="Reichweiten-Radius Umschalten">
+                        <i data-lucide="disc" class="w-5 h-5 text-cyber-400"></i>
+                    </button>
+                    <button id="btn-recenter-map" class="glass-panel p-2.5 rounded-xl text-slate-300 hover:text-cyber-400 transition shadow-lg" title="Karte Zentrieren">
+                        <i data-lucide="locate-fixed" class="w-5 h-5"></i>
+                    </button>
+                    <button id="btn-toggle-layer" class="glass-panel p-2.5 rounded-xl text-slate-300 hover:text-cyber-400 transition shadow-lg" title="Kartentyp Ändern">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </button>
                 </div>
-                <div class="step-card" id="step-2">
-                    <div class="step-glow"></div>
-                    <h4>II. ENTWICKLUNG</h4>
-                    <div class="step-icon" id="icon-2">+</div>
-                </div>
-                <div class="step-card" id="step-3">
-                    <div class="step-glow"></div>
-                    <h4>III. PRODUKTION</h4>
-                    <div class="step-icon" id="icon-3">+</div>
-                </div>
-                <div class="step-card" id="step-4">
-                    <div class="step-glow"></div>
-                    <h4>IV. BEGLEITUNG</h4>
-                    <div class="step-icon" id="icon-4">+</div>
-                </div>
-            </div>
-        </div>
 
-        <!-- VIEW 3: ADMIN LOGIN -->
-        <div id="admin-login-view" class="view">
-            <div class="login-box">
-                <h2 style="margin-bottom: 30px;">INTERNER BEREICH</h2>
-                <div id="admin-error" class="error-msg">ZUGRIFF VERWEIGERT. DATEN INKORREKT.</div>
-                
-                <div class="input-group">
-                    <label>E-Mail Adresse</label>
-                    <input type="email" id="admin-email" placeholder="dumperth@aol.com">
-                </div>
-                <div class="input-group">
-                    <label>Passwort</label>
-                    <input type="password" id="admin-password" placeholder="••••••••">
-                </div>
-                <button onclick="adminLogin()">Authentifizieren</button>
-            </div>
-        </div>
-
-        <!-- VIEW 4: ADMIN DASHBOARD (CONTROL PANEL) -->
-        <div id="dashboard-view" class="view">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px;">
-                <h2>System Control Panel</h2>
-                <button onclick="logout()" style="width: auto; padding: 10px 20px; background: #333; color: white;">Abmelden</button>
-            </div>
-
-            <div class="admin-layout">
-                <!-- Panel: Neues Projekt -->
-                <div class="admin-panel">
-                    <h3 style="margin-bottom: 30px; font-size: 18px;">NEUES PROJEKT INITIALISIEREN</h3>
-                    
-                    <div class="input-group">
-                        <label>Projekt- / Kundenname</label>
-                        <input type="text" id="new-name" placeholder="Eingabe...">
+                <!-- Live Trip Simulation HUD Overlay (Top Left Floating) -->
+                <div id="simulation-hud" class="absolute top-4 left-4 z-10 glass-panel rounded-2xl p-4 border border-cyber-500/40 shadow-2xl hidden flex-col gap-3 w-64 animate-float">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span class="text-xs font-bold text-cyber-400 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> LIVE SIMULATION
+                        </span>
+                        <span id="sim-speed-multiplier" class="text-[10px] font-mono bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">2x Speeds</span>
                     </div>
-                    
-                    <div class="input-group">
-                        <label>Ziel-Datum</label>
-                        <input type="date" id="new-date">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>Initialer Status</label>
-                        <select id="new-status" class="status-select" style="max-width: 100%;">
-                            <option value="1">I. Konzeption</option>
-                            <option value="2">II. ENTWICKLUNG</option>
-                            <option value="3">III. PRODUKTION</option>
-                            <option value="4">IV. Begleitung</option>
-                        </select>
-                    </div>
-                    
-                    <button onclick="createProject()" style="margin-top: 10px;">PROJEKT GENERIEREN</button>
-                </div>
 
-                <!-- Panel: Projektliste -->
-                <div class="data-table-container">
-                    <h3 style="margin-bottom: 30px; font-size: 18px;">AKTIVE PROJEKTE DATENBANK</h3>
-                    
-                    <table id="projects-table">
-                        <thead>
-                            <tr>
-                                <th>Code</th>
-                                <th>Projekt</th>
-                                <th>Datum</th>
-                                <th>Workflow Status</th>
-                                <th style="text-align: right;">Aktion</th>
-                            </tr>
-                        </thead>
-                        <tbody id="projects-body">
-                            <!-- JS füllt Tabelle -->
-                        </tbody>
-                    </table>
-                    <div id="empty-state" style="padding: 40px 0; text-align: center; color: #666; display: none;">
-                        KEINE AKTIVEN PROJEKTE IM SYSTEM.
+                    <!-- Gauges Row -->
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="bg-slate-900/60 p-2 rounded-xl border border-white/5">
+                            <span class="text-[10px] text-slate-400 block">Tempo</span>
+                            <span id="sim-hud-speed" class="text-lg font-bold font-mono text-cyber-400">0.0 km/h</span>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-xl border border-white/5">
+                            <span class="text-[10px] text-slate-400 block">Leistung</span>
+                            <span id="sim-hud-watts" class="text-lg font-bold font-mono text-amber-400">0 W</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1 text-xs font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Neigung:</span>
+                            <span id="sim-hud-slope" class="text-slate-200">0.0 %</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Strecke:</span>
+                            <span id="sim-hud-dist" class="text-slate-200">0.0 / 0.0 km</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Akku:</span>
+                            <span id="sim-hud-battery" class="text-volt-400 font-bold">100 %</span>
+                        </div>
+                    </div>
+
+                    <!-- Sim Controls -->
+                    <div class="flex gap-1 pt-1">
+                        <button id="sim-pause-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg text-xs font-semibold">Pause</button>
+                        <button id="sim-speed-btn" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-semibold">Speed</button>
+                        <button id="sim-stop-btn" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-2.5 py-1.5 rounded-lg text-xs font-semibold">Stop</button>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <!-- Bottom Drawer Elevation & Battery Chart Section -->
+            <div id="chart-drawer" class="h-56 glass-panel border-t border-white/10 p-3 flex flex-col relative z-10">
+                <div class="flex items-center justify-between mb-1 px-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-cyber-400"></i> Höhen- & Akkuprofil
+                        </span>
+                        <div class="flex items-center gap-3 text-[11px]">
+                            <span class="flex items-center gap-1 text-violet-400"><span class="w-2 h-2 rounded-full bg-violet-500"></span> Höhe (m)</span>
+                            <span class="flex items-center gap-1 text-volt-400"><span class="w-2 h-2 rounded-full bg-volt-500"></span> Akku (%)</span>
+                        </div>
+                    </div>
+                    <button id="toggle-chart-height-btn" class="text-slate-400 hover:text-white p-1">
+                        <i data-lucide="minimize-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Canvas for Chart.js -->
+                <div class="flex-1 relative w-full h-full">
+                    <canvas id="elevationChart"></canvas>
+                </div>
+            </div>
+        </section>
 
     </main>
 
-    <!-- LOGIK -->
+    <!-- Custom Scooter Modal -->
+    <div id="custom-scooter-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 border border-white/10 space-y-4 relative shadow-2xl">
+            <button id="close-scooter-modal" class="absolute right-4 top-4 text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="cpu" class="w-5 h-5 text-cyber-400"></i> Custom E-Scooter Profil
+            </h3>
+
+            <form id="custom-scooter-form" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Modellname</label>
+                    <input type="text" id="custom-name" required placeholder="z.B. Egret Pro Custom" class="w-full glass-input rounded-xl px-3 py-2">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Akkukapazität (Wh)</label>
+                        <input type="number" id="custom-wh" required value="600" class="w-full glass-input rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Akkuspannung (V)</label>
+                        <input type="number" id="custom-volt" required value="48" class="w-full glass-input rounded-xl px-3 py-2">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Motor Nennleistung (W)</label>
+                        <input type="number" id="custom-watts" required value="500" class="w-full glass-input rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Scooter Gewicht (kg)</label>
+                        <input type="number" id="custom-weight" required value="20" class="w-full glass-input rounded-xl px-3 py-2">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Hersteller Reichweitenangabe (km)</label>
+                    <input type="number" id="custom-max-range" required value="60" class="w-full glass-input rounded-xl px-3 py-2">
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-cyber-500 to-violet-600 text-white font-bold py-2.5 rounded-xl shadow-lg">
+                        Profil Speichern & Verwenden
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <script>
-        // Datenbank Simulation (LocalStorage)
-        let padDatabase = JSON.parse(localStorage.getItem('pad_db_v2')) || {};
+        // Initialize Lucide Icons
+        lucide.createIcons();
 
-        // UI Navigation
-        function showView(viewId) {
-            // Alle Views ausblenden
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            // Gewünschten View einblenden
-            document.getElementById(viewId).classList.add('active');
+        // App State Object
+        const AppState = {
+            // Selected Scooter Specs
+            scooter: {
+                id: 'ninebot_max_g2',
+                name: 'Ninebot MAX G2 D',
+                batteryWh: 551,
+                voltage: 36,
+                motorWatts: 450,
+                weightKg: 24.3,
+                maxRangeKm: 70
+            },
+            // Environmental and Rider Parameters
+            params: {
+                riderWeightKg: 75,
+                cargoWeightKg: 5,
+                temperatureC: 20,
+                windSpeedKmh: 10,
+                mode: 'drive', // eco, drive, sport
+                surface: 'rough_asphalt'
+            },
+            // Route Waypoints & Geo Data
+            waypoints: {
+                start: null, // { lat, lng, address }
+                via: [],
+                end: null
+            },
+            routeData: null, // OSRM Route Response
+            physicsProfile: [], // Calculated per-segment physics data
+            // Interactive state
+            currentTileLayer: 'dark',
+            showRangeCircle: true,
+            isSimulating: false,
+            simStepIndex: 0,
+            simInterval: null,
+            simSpeedMultiplier: 2
+        };
+
+        // Scooter Presets Database
+        const SCOOTER_PRESETS = {
+            ninebot_max_g2: {
+                id: 'ninebot_max_g2',
+                name: 'Ninebot MAX G2 D',
+                batteryWh: 551,
+                voltage: 36,
+                motorWatts: 450,
+                weightKg: 24.3,
+                maxRangeKm: 70
+            },
+            epowerfun_epf2: {
+                id: 'epowerfun_epf2',
+                name: 'ePowerFun ePF-2 XT 600',
+                batteryWh: 600,
+                voltage: 48,
+                motorWatts: 500,
+                weightKg: 20.5,
+                maxRangeKm: 65
+            },
+            kukirin_g2_pro: {
+                id: 'kukirin_g2_pro',
+                name: 'KuKirin G2 Pro',
+                batteryWh: 720,
+                voltage: 48,
+                motorWatts: 600,
+                weightKg: 25.0,
+                maxRangeKm: 55
+            },
+            vmax_vx2_pro: {
+                id: 'vmax_vx2_pro',
+                name: 'VMAX VX2 Pro',
+                batteryWh: 612,
+                voltage: 48,
+                motorWatts: 500,
+                weightKg: 20.4,
+                maxRangeKm: 60
+            },
+            xiaomi_4_pro: {
+                id: 'xiaomi_4_pro',
+                name: 'Xiaomi Scooter 4 Pro',
+                batteryWh: 446,
+                voltage: 36,
+                motorWatts: 350,
+                weightKg: 17.0,
+                maxRangeKm: 45
+            }
+        };
+
+        // Surface Friction Coefficients (C_r)
+        const SURFACE_CR = {
+            asphalt: 0.012,
+            rough_asphalt: 0.020,
+            cobblestone: 0.030,
+            gravel: 0.040
+        };
+
+        // Speed per mode in m/s and km/h
+        const MODE_SPEEDS = {
+            eco: 15,
+            drive: 20,
+            sport: 22
+        };
+
+        class PhysicsEngine {
             
-            // Navigations-Punkte anpassen
-            document.getElementById('nav-login').classList.remove('active');
-            document.getElementById('nav-admin').classList.remove('active');
-            
-            if(viewId === 'login-view' || viewId === 'status-view') {
-                document.getElementById('nav-login').classList.add('active');
-            } else {
-                document.getElementById('nav-admin').classList.add('active');
+            /**
+             * Calculates Li-Ion battery capacity factor based on ambient temperature
+             */
+            static getTemperatureDerating(tempC) {
+                if (tempC >= 20) return 1.0;
+                // Loss of ~1.2% capacity per degree below 20°C
+                const factor = 1.0 - ((20 - tempC) * 0.012);
+                return Math.max(0.4, factor); // Cap min capacity at 40%
             }
 
-            // Fehler zurücksetzen
-            document.querySelectorAll('.error-msg').forEach(e => e.style.display = 'none');
-            document.getElementById('customer-code-input').value = '';
-        }
+            /**
+             * Core Physics Calculation Engine
+             * Computes energy consumption (Wh) over a distance delta considering air, rolling and slope resistance.
+             */
+            static calculateSegmentEnergy(distMeters, slopePercent, state) {
+                const totalMassKg = state.scooter.weightKg + state.params.riderWeightKg + state.params.cargoWeightKg;
+                const speedKmh = MODE_SPEEDS[state.params.mode];
+                const speedMs = speedKmh / 3.6;
+                const headwindMs = state.params.windSpeedKmh / 3.6;
 
-        // --- KUNDEN LOGIK ---
-        function checkStatus() {
-            const input = document.getElementById('customer-code-input');
-            const code = input.value.toUpperCase().trim();
-            const project = padDatabase[code];
+                // 1. Air Resistance: F_air = 0.5 * rho * Cd * A * (v + v_wind)^2
+                const rho = 1.225; // Air density kg/m3
+                const CdA = 0.55;  // Drag coefficient * frontal area for scooter rider
+                const effectiveSpeedMs = speedMs + headwindMs;
+                const Fair = 0.5 * rho * CdA * Math.pow(effectiveSpeedMs, 2);
 
-            if (project) {
-                // Daten setzen
-                document.getElementById('display-name').innerText = project.name;
-                
-                const dateParts = project.date.split('-'); // YYYY-MM-DD
-                document.getElementById('display-date').innerText = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+                // 2. Rolling Resistance: F_roll = Cr * m * g * cos(theta)
+                const Cr = SURFACE_CR[state.params.surface] || 0.02;
+                const slopeRad = Math.atan(slopePercent / 100);
+                const Froll = Cr * totalMassKg * 9.81 * Math.cos(slopeRad);
 
-                // Workflow UI aktualisieren
-                for (let i = 1; i <= 4; i++) {
-                    const card = document.getElementById(`step-${i}`);
-                    const icon = document.getElementById(`icon-${i}`);
-                    
-                    // Reset
-                    card.classList.remove('active', 'completed');
-                    icon.innerHTML = '+';
-                    
-                    if (i < project.status) {
-                        card.classList.add('completed');
-                        icon.innerHTML = '&#10003;'; // Checkmark
-                    } else if (i === project.status) {
-                        card.classList.add('active');
-                        // Optional animierter Indicator statt +
-                        icon.innerHTML = '●';
-                    }
+                // 3. Slope Resistance: F_slope = m * g * sin(theta)
+                const Fslope = totalMassKg * 9.81 * Math.sin(slopeRad);
+
+                // Total Force Required
+                const Ftotal = Fair + Froll + Fslope;
+
+                // Power required at the wheels (Watts = Force * Velocity)
+                const Pwheel = Ftotal * speedMs;
+
+                // Powertrain Efficiency (~82% motor + inverter efficiency)
+                let Pelec = 0;
+                if (Pwheel > 0) {
+                    Pelec = Pwheel / 0.82;
+                } else {
+                    // Downhill Regenerative Braking / Freewheel gain
+                    Pelec = Pwheel * 0.35; // 35% recuperation efficiency
                 }
+
+                // Travel time for segment (seconds)
+                const timeSec = distMeters / speedMs;
+
+                // Watt-hours consumed in this segment: Wh = Watts * hours
+                const WhConsumed = (Pelec * (timeSec / 3600));
+
+                return {
+                    WhConsumed,
+                    Pelec,
+                    speedKmh,
+                    slopePercent
+                };
+            }
+
+            /**
+             * Calculates total theoretical range radius in kilometers under current conditions
+             */
+            static calculateRangeRadiusKm(state) {
+                const tempFactor = this.getTemperatureDerating(state.params.temperatureC);
+                const effectiveWh = state.scooter.batteryWh * tempFactor;
                 
-                showView('status-view');
-            } else {
-                document.getElementById('login-error').style.display = 'block';
-                input.style.borderBottomColor = '#ff5252';
-                setTimeout(() => input.style.borderBottomColor = '#444', 2000);
+                // Average flat ground consumption
+                const sampleSegment = this.calculateSegmentEnergy(1000, 0, state);
+                const WhPerKm = Math.max(8, sampleSegment.WhConsumed);
+
+                return effectiveWh / WhPerKm;
             }
         }
 
-        // Eingabe mit Enter-Taste im Kundenfeld
-        document.getElementById('customer-code-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') checkStatus();
+        class MapManager {
+            constructor() {
+                this.map = null;
+                this.tileLayers = {};
+                this.startMarker = null;
+                this.endMarker = null;
+                this.waypointMarkers = [];
+                this.scooterMarker = null;
+                this.rangeCircle = null;
+                this.routePolyline = null;
+                this.hoverCrosshairMarker = null;
+            }
+
+            init() {
+                // Initialize map centered at Munich (Odeonsplatz)
+                this.map = L.map('map', { zoomControl: false }).setView([48.1428, 11.5775], 13);
+
+                // Define Tile Layers
+                this.tileLayers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; CartoDB'
+                });
+
+                this.tileLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 18,
+                    attribution: '&copy; Esri'
+                });
+
+                this.tileLayers.dark.addTo(this.map);
+                L.control.zoom({ position: 'topright' }).addTo(this.map);
+
+                // Map Click Listener
+                this.map.on('click', (e) => this.handleMapClick(e));
+            }
+
+            handleMapClick(e) {
+                const latlng = e.latlng;
+                
+                if (!AppState.waypoints.start) {
+                    this.setStartLocation(latlng.lat, latlng.lng, "Ausgewählter Startpunkt");
+                } else if (!AppState.waypoints.end) {
+                    this.setEndLocation(latlng.lat, latlng.lng, "Ausgewähltes Ziel");
+                    UIController.triggerRouteCalculation();
+                }
+            }
+
+            setStartLocation(lat, lng, label) {
+                AppState.waypoints.start = { lat, lng, label };
+                
+                if (this.startMarker) this.map.removeLayer(this.startMarker);
+                
+                const startIcon = L.divIcon({
+                    className: 'custom-pin-start',
+                    html: `<div class="w-6 h-6 rounded-full bg-volt-500 border-2 border-white shadow-lg flex items-center justify-center text-slate-900 font-bold text-[10px]">A</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                this.startMarker = L.marker([lat, lng], { icon: startIcon }).addTo(this.map);
+                document.getElementById('start-search-input').value = label || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                this.updateRangeCircle();
+            }
+
+            setEndLocation(lat, lng, label) {
+                AppState.waypoints.end = { lat, lng, label };
+
+                if (this.endMarker) this.map.removeLayer(this.endMarker);
+
+                const endIcon = L.divIcon({
+                    className: 'custom-pin-end',
+                    html: `<div class="w-6 h-6 rounded-full bg-red-500 border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-[10px]">B</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                this.endMarker = L.marker([lat, lng], { icon: endIcon }).addTo(this.map);
+                document.getElementById('end-search-input').value = label || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            }
+
+            updateRangeCircle() {
+                if (!AppState.waypoints.start || !AppState.showRangeCircle) {
+                    if (this.rangeCircle) this.map.removeLayer(this.rangeCircle);
+                    return;
+                }
+
+                const rangeKm = PhysicsEngine.calculateRangeRadiusKm(AppState);
+                const radiusMeters = rangeKm * 1000;
+
+                if (this.rangeCircle) this.map.removeLayer(this.rangeCircle);
+
+                this.rangeCircle = L.circle([AppState.waypoints.start.lat, AppState.waypoints.start.lng], {
+                    radius: radiusMeters,
+                    color: '#06b6d4',
+                    fillColor: '#06b6d4',
+                    fillOpacity: 0.12,
+                    weight: 2,
+                    dashArray: '6, 8'
+                }).addTo(this.map);
+            }
+
+            renderRoutePolyline(coordinates) {
+                if (this.routePolyline) this.map.removeLayer(this.routePolyline);
+
+                this.routePolyline = L.polyline(coordinates, {
+                    color: '#8b5cf6',
+                    weight: 6,
+                    opacity: 0.85,
+                    lineCap: 'round'
+                }).addTo(this.map);
+
+                this.map.fitBounds(this.routePolyline.getBounds(), { padding: [50, 50] });
+            }
+
+            updateHoverCrosshair(lat, lng) {
+                if (!this.hoverCrosshairMarker) {
+                    const icon = L.divIcon({
+                        className: 'hover-crosshair',
+                        html: `<div class="w-4 h-4 rounded-full bg-cyber-400 border-2 border-white animate-ping"></div>`,
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    });
+                    this.hoverCrosshairMarker = L.marker([lat, lng], { icon }).addTo(this.map);
+                } else {
+                    this.hoverCrosshairMarker.setLatLng([lat, lng]);
+                }
+            }
+
+            removeHoverCrosshair() {
+                if (this.hoverCrosshairMarker) {
+                    this.map.removeLayer(this.hoverCrosshairMarker);
+                    this.hoverCrosshairMarker = null;
+                }
+            }
+        }
+
+        class ChartManager {
+            constructor() {
+                this.chart = null;
+            }
+
+            init() {
+                const ctx = document.getElementById('elevationChart').getContext('2d');
+                
+                // Gradient for Elevation
+                const gradientEle = ctx.createLinearGradient(0, 0, 0, 200);
+                gradientEle.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+                gradientEle.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: 'Höhe (m)',
+                                data: [],
+                                borderColor: '#8b5cf6',
+                                backgroundColor: gradientEle,
+                                fill: true,
+                                tension: 0.3,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Akku (%)',
+                                data: [],
+                                borderColor: '#22c55e',
+                                borderWidth: 2,
+                                borderDash: [4, 4],
+                                fill: false,
+                                tension: 0.1,
+                                pointRadius: 0,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleFont: { family: 'Inter', size: 12 },
+                                bodyFont: { family: 'JetBrains Mono', size: 11 },
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#94a3b8', font: { size: 10 } }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#8b5cf6', font: { size: 10 } }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 0,
+                                max: 100,
+                                grid: { drawOnChartArea: false },
+                                ticks: { color: '#22c55e', font: { size: 10 } }
+                            }
+                        },
+                        onHover: (event, activeElements) => {
+                            if (activeElements.length > 0 && AppState.physicsProfile) {
+                                const idx = activeElements[0].index;
+                                const point = AppState.physicsProfile[idx];
+                                if (point) {
+                                    window.mapMgr.updateHoverCrosshair(point.lat, point.lng);
+                                }
+                            } else {
+                                window.mapMgr.removeHoverCrosshair();
+                            }
+                        }
+                    }
+                });
+            }
+
+            updateData(labels, elevations, batteryLevels) {
+                if (!this.chart) return;
+                this.chart.data.labels = labels;
+                this.chart.data.datasets[0].data = elevations;
+                this.chart.data.datasets[1].data = batteryLevels;
+                this.chart.update();
+            }
+        }
+
+        class UIController {
+            static init() {
+                // Initialize instances
+                window.mapMgr = new MapManager();
+                window.mapMgr.init();
+
+                window.chartMgr = new ChartManager();
+                window.chartMgr.init();
+
+                this.bindEvents();
+                this.updateHeaderUI();
+            }
+
+            static bindEvents() {
+                // Tab Switching
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const targetTab = e.currentTarget.getAttribute('data-tab');
+                        document.querySelectorAll('.tab-btn').forEach(b => {
+                            b.classList.remove('text-cyber-400', 'bg-slate-800/80', 'border', 'border-cyber-500/30');
+                            b.classList.add('text-slate-400');
+                        });
+                        e.currentTarget.classList.add('text-cyber-400', 'bg-slate-800/80', 'border', 'border-cyber-500/30');
+                        e.currentTarget.classList.remove('text-slate-400');
+
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                        document.getElementById(targetTab).classList.remove('hidden');
+                    });
+                });
+
+                // Scooter Preset Selector
+                document.getElementById('scooter-preset-select').addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    if (val === 'custom') {
+                        document.getElementById('custom-scooter-modal').classList.remove('hidden');
+                    } else {
+                        AppState.scooter = SCOOTER_PRESETS[val];
+                        this.updateHeaderUI();
+                        window.mapMgr.updateRangeCircle();
+                        if (AppState.routeData) this.calculatePhysicsAndRender();
+                    }
+                });
+
+                // Mode Selector Buttons
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.mode-btn').forEach(b => {
+                            b.className = "mode-btn glass-card py-2 px-3 rounded-xl text-center border border-white/10 hover:border-cyber-500/40";
+                            b.querySelector('span').className = "block text-xs font-bold text-slate-200";
+                        });
+                        const mode = e.currentTarget.getAttribute('data-mode');
+                        AppState.params.mode = mode;
+                        e.currentTarget.className = "mode-btn glass-card py-2 px-3 rounded-xl text-center border border-cyber-500 bg-cyber-500/10";
+                        e.currentTarget.querySelector('span').className = "block text-xs font-bold text-cyber-400";
+
+                        window.mapMgr.updateRangeCircle();
+                        if (AppState.routeData) this.calculatePhysicsAndRender();
+                    });
+                });
+
+                // Slider Input Bindings
+                this.bindSlider('input-rider-weight', 'val-rider-weight', ' kg', (v) => AppState.params.riderWeightKg = parseFloat(v));
+                this.bindSlider('input-cargo-weight', 'val-cargo-weight', ' kg', (v) => AppState.params.cargoWeightKg = parseFloat(v));
+                this.bindSlider('input-temperature', 'val-temperature', ' °C', (v) => {
+                    AppState.params.temperatureC = parseFloat(v);
+                    const derating = PhysicsEngine.getTemperatureDerating(AppState.params.temperatureC);
+                    document.getElementById('temp-impact-note').textContent = `${Math.round(derating * 100)}% Akkukapazität verfügbar`;
+                    document.getElementById('header-temp-val').textContent = `${v}°C`;
+                });
+                this.bindSlider('input-wind', 'val-wind', ' km/h', (v) => {
+                    AppState.params.windSpeedKmh = parseFloat(v);
+                    document.getElementById('header-wind-val').textContent = `${v} km/h`;
+                });
+
+                // Surface Dropdown
+                document.getElementById('surface-select').addEventListener('change', (e) => {
+                    AppState.params.surface = e.target.value;
+                    if (AppState.routeData) this.calculatePhysicsAndRender();
+                });
+
+                // Route Buttons
+                document.getElementById('calc-route-btn').addEventListener('click', () => this.triggerRouteCalculation());
+                document.getElementById('clear-route-btn').addEventListener('click', () => this.clearRoute());
+
+                // Preset Routes
+                document.querySelectorAll('.preset-route-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const preset = e.currentTarget.getAttribute('data-preset');
+                        if (preset === 'm_city') {
+                            window.mapMgr.setStartLocation(48.1371, 11.5754, "Marienplatz");
+                            window.mapMgr.setEndLocation(48.1500, 11.5800, "München Nord");
+                        } else if (preset === 'm_isar') {
+                            window.mapMgr.setStartLocation(48.1371, 11.5754, "Marienplatz");
+                            window.mapMgr.setEndLocation(48.0600, 11.5400, "Pullach im Isartal");
+                        } else if (preset === 'm_starnberg') {
+                            window.mapMgr.setStartLocation(48.1371, 11.5754, "Marienplatz München");
+                            window.mapMgr.setEndLocation(47.9960, 11.3360, "Starnberg See");
+                        }
+                        this.triggerRouteCalculation();
+                    });
+                });
+
+                // Modal Close
+                document.getElementById('close-scooter-modal').addEventListener('click', () => {
+                    document.getElementById('custom-scooter-modal').classList.add('hidden');
+                });
+
+                // Custom Scooter Form Submission
+                document.getElementById('custom-scooter-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const customObj = {
+                        id: 'custom_' + Date.now(),
+                        name: document.getElementById('custom-name').value,
+                        batteryWh: parseFloat(document.getElementById('custom-wh').value),
+                        voltage: parseFloat(document.getElementById('custom-volt').value),
+                        motorWatts: parseFloat(document.getElementById('custom-watts').value),
+                        weightKg: parseFloat(document.getElementById('custom-weight').value),
+                        maxRangeKm: parseFloat(document.getElementById('custom-max-range').value)
+                    };
+                    
+                    AppState.scooter = customObj;
+                    document.getElementById('custom-scooter-modal').classList.add('hidden');
+                    this.updateHeaderUI();
+                    window.mapMgr.updateRangeCircle();
+                    if (AppState.routeData) this.calculatePhysicsAndRender();
+                });
+
+                // Map Control Buttons
+                document.getElementById('btn-recenter-map').addEventListener('click', () => {
+                    if (AppState.waypoints.start) {
+                        window.mapMgr.map.setView([AppState.waypoints.start.lat, AppState.waypoints.start.lng], 14);
+                    }
+                });
+
+                document.getElementById('btn-toggle-range-circle').addEventListener('click', () => {
+                    AppState.showRangeCircle = !AppState.showRangeCircle;
+                    window.mapMgr.updateRangeCircle();
+                });
+
+                // Simulation Trigger Button
+                document.getElementById('start-simulation-btn').addEventListener('click', () => this.startTripSimulation());
+            }
+
+            static bindSlider(sliderId, valueId, unit, callback) {
+                document.getElementById(sliderId).addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    document.getElementById(valueId).textContent = val + unit;
+                    callback(val);
+                    window.mapMgr.updateRangeCircle();
+                    if (AppState.routeData) this.calculatePhysicsAndRender();
+                });
+            }
+
+            static updateHeaderUI() {
+                const s = AppState.scooter;
+                document.getElementById('scooter-battery-wh').textContent = `${s.batteryWh} Wh (${s.voltage}V)`;
+                
+                const rangeEst = PhysicsEngine.calculateRangeRadiusKm(AppState);
+                document.getElementById('header-range-est').textContent = `~${Math.round(rangeEst)} km`;
+            }
+
+            static triggerRouteCalculation() {
+                if (!AppState.waypoints.start || !AppState.waypoints.end) {
+                    alert("Bitte wähle erst einen Startpunkt und ein Ziel aus.");
+                    return;
+                }
+
+                const url = `https://router.project-osrm.org/route/v1/bike/${AppState.waypoints.start.lng},${AppState.waypoints.start.lat};${AppState.waypoints.end.lng},${AppState.waypoints.end.lat}?overview=full&geometries=geojson&steps=true`;
+
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.routes && data.routes.length > 0) {
+                            AppState.routeData = data.routes[0];
+                            this.calculatePhysicsAndRender();
+                            
+                            // Enable Sim & Export Buttons
+                            document.getElementById('start-simulation-btn').disabled = false;
+                            document.getElementById('start-simulation-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+                            document.getElementById('export-gpx-btn').disabled = false;
+                            document.getElementById('export-gpx-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Routing Error:", err);
+                        alert("Route konnte nicht berechnet werden. Prüfe die Internetverbindung.");
+                    });
+            }
+
+            static calculatePhysicsAndRender() {
+                const route = AppState.routeData;
+                const coords = route.geometry.coordinates; // Array of [lng, lat]
+                
+                // Polyline for Leaflet
+                const leafletCoords = coords.map(c => [c[1], c[0]]);
+                window.mapMgr.renderRoutePolyline(leafletCoords);
+
+                const totalDistKm = route.distance / 1000;
+                const totalDurMin = Math.round((totalDistKm / MODE_SPEEDS[AppState.params.mode]) * 60);
+
+                // Build Segment-by-segment Physics Simulation Data
+                let currentBatteryWh = AppState.scooter.batteryWh * PhysicsEngine.getTemperatureDerating(AppState.params.temperatureC);
+                const initialWh = currentBatteryWh;
+
+                const physicsProfile = [];
+                const chartLabels = [];
+                const elevationValues = [];
+                const batteryValues = [];
+
+                let accumDistM = 0;
+                let eleUp = 0;
+                let eleDown = 0;
+
+                // Synthetic realistic elevation generator along route coordinates
+                coords.forEach((c, idx) => {
+                    const lat = c[1];
+                    const lng = c[0];
+
+                    if (idx > 0) {
+                        const prev = coords[idx - 1];
+                        const segDistM = L.latLng(lat, lng).distanceTo(L.latLng(prev[1], prev[0]));
+                        accumDistM += segDistM;
+                    }
+
+                    // Simulated realistic elevation curve based on coordinates
+                    const ele = Math.round(500 + Math.sin(lat * 100) * 45 + Math.cos(lng * 80) * 35);
+                    
+                    if (idx > 0) {
+                        const prevEle = elevationValues[idx - 1];
+                        const diff = ele - prevEle;
+                        if (diff > 0) eleUp += diff;
+                        else eleDown += Math.abs(diff);
+
+                        const prev = coords[idx - 1];
+                        const segDistM = L.latLng(lat, lng).distanceTo(L.latLng(prev[1], prev[0]));
+                        const slopePct = segDistM > 0 ? ((diff) / segDistM) * 100 : 0;
+
+                        const energy = PhysicsEngine.calculateSegmentEnergy(segDistM, slopePct, AppState);
+                        currentBatteryWh -= energy.WhConsumed;
+                    }
+
+                    const batteryPct = Math.max(0, Math.round((currentBatteryWh / initialWh) * 100));
+
+                    physicsProfile.push({
+                        lat, lng,
+                        distKm: (accumDistM / 1000).toFixed(1),
+                        elevation: ele,
+                        batteryPct
+                    });
+
+                    chartLabels.push((accumDistM / 1000).toFixed(1) + ' km');
+                    elevationValues.push(ele);
+                    batteryValues.push(batteryPct);
+                });
+
+                AppState.physicsProfile = physicsProfile;
+
+                // Update Stats UI
+                document.getElementById('stat-distance').textContent = totalDistKm.toFixed(1) + ' km';
+                document.getElementById('stat-duration').textContent = totalDurMin + ' min';
+                document.getElementById('stat-ele-up').textContent = '+' + eleUp + ' m';
+                document.getElementById('stat-ele-down').textContent = '-' + eleDown + ' m';
+
+                const usedWh = Math.round(initialWh - currentBatteryWh);
+                const endBatteryPct = Math.max(0, Math.round((currentBatteryWh / initialWh) * 100));
+                
+                document.getElementById('stat-battery-percent').textContent = endBatteryPct + ' %';
+                document.getElementById('stat-battery-bar').style.width = endBatteryPct + '%';
+                document.getElementById('stat-wh-used').textContent = usedWh + ' Wh';
+                document.getElementById('stat-wh-km').textContent = (usedWh / totalDistKm).toFixed(1) + ' Wh/km';
+
+                // Charging Warning Box Trigger
+                const chargingBox = document.getElementById('charging-stop-box');
+                if (endBatteryPct <= 0) {
+                    chargingBox.classList.remove('hidden');
+                } else {
+                    chargingBox.classList.add('hidden');
+                }
+
+                // Render Chart
+                window.chartMgr.updateData(chartLabels, elevationValues, batteryValues);
+
+                // Render Turn-by-Turn Steps
+                this.renderDirectionsList(route.legs[0].steps);
+            }
+
+            static renderDirectionsList(steps) {
+                const container = document.getElementById('directions-list');
+                container.innerHTML = '';
+
+                steps.forEach((step, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'glass-card p-2.5 rounded-xl flex items-center gap-3 border border-white/5';
+                    item.innerHTML = `
+                        <div class="w-6 h-6 rounded-lg bg-cyber-500/20 text-cyber-400 flex items-center justify-center font-mono font-bold text-[10px]">
+                            ${i + 1}
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-slate-200 text-xs">${step.maneuver.instruction || step.name || "Weiter auf dem Weg"}</p>
+                            <p class="text-[10px] text-slate-400">${Math.round(step.distance)} Meter</p>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            static clearRoute() {
+                AppState.routeData = null;
+                AppState.waypoints.start = null;
+                AppState.waypoints.end = null;
+                document.getElementById('start-search-input').value = '';
+                document.getElementById('end-search-input').value = '';
+
+                if (window.mapMgr.startMarker) window.mapMgr.map.removeLayer(window.mapMgr.startMarker);
+                if (window.mapMgr.endMarker) window.mapMgr.map.removeLayer(window.mapMgr.endMarker);
+                if (window.mapMgr.routePolyline) window.mapMgr.map.removeLayer(window.mapMgr.routePolyline);
+
+                window.chartMgr.updateData([], [], []);
+                document.getElementById('directions-list').innerHTML = '<p class="text-slate-500 text-center py-8">Berechne erst eine Route...</p>';
+            }
+
+            static startTripSimulation() {
+                if (!AppState.physicsProfile || AppState.physicsProfile.length === 0) return;
+
+                AppState.isSimulating = true;
+                AppState.simStepIndex = 0;
+
+                const hud = document.getElementById('simulation-hud');
+                hud.classList.remove('hidden');
+
+                // Add Scooter Marker to Map
+                const scooterIcon = L.divIcon({
+                    className: 'scooter-marker-icon',
+                    html: `<div class="w-7 h-7 rounded-full bg-gradient-to-tr from-cyber-500 to-violet-600 border-2 border-white shadow-xl flex items-center justify-center text-white"><i data-lucide="zap" class="w-4 h-4"></i></div>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
+
+                if (window.mapMgr.scooterMarker) window.mapMgr.map.removeLayer(window.mapMgr.scooterMarker);
+                window.mapMgr.scooterMarker = L.marker([AppState.physicsProfile[0].lat, AppState.physicsProfile[0].lng], { icon: scooterIcon }).addTo(window.mapMgr.map);
+
+                lucide.createIcons();
+
+                // Animation Interval Loop
+                AppState.simInterval = setInterval(() => {
+                    if (AppState.simStepIndex >= AppState.physicsProfile.length) {
+                        clearInterval(AppState.simInterval);
+                        hud.classList.add('hidden');
+                        return;
+                    }
+
+                    const point = AppState.physicsProfile[AppState.simStepIndex];
+                    window.mapMgr.scooterMarker.setLatLng([point.lat, point.lng]);
+                    window.mapMgr.map.panTo([point.lat, point.lng]);
+
+                    // Update HUD Numbers
+                    document.getElementById('sim-hud-speed').textContent = MODE_SPEEDS[AppState.params.mode] + ' km/h';
+                    document.getElementById('sim-hud-watts').textContent = Math.round(AppState.scooter.motorWatts * 0.75) + ' W';
+                    document.getElementById('sim-hud-dist').textContent = `${point.distKm} km`;
+                    document.getElementById('sim-hud-battery').textContent = `${point.batteryPct} %`;
+
+                    AppState.simStepIndex += 1;
+                }, 400 / AppState.simSpeedMultiplier);
+
+                document.getElementById('sim-stop-btn').onclick = () => {
+                    clearInterval(AppState.simInterval);
+                    hud.classList.add('hidden');
+                    if (window.mapMgr.scooterMarker) window.mapMgr.map.removeLayer(window.mapMgr.scooterMarker);
+                };
+            }
+        }
+
+        // Initialize Application on DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            UIController.init();
         });
-
-        // --- ADMIN LOGIK ---
-        function adminLogin() {
-            const mail = document.getElementById('admin-email').value;
-            const pass = document.getElementById('admin-password').value;
-
-            if (mail === 'dumperth@aol.com' && pass === 'Padautomation123!?') {
-                document.getElementById('admin-email').value = '';
-                document.getElementById('admin-password').value = '';
-                updateAdminTable();
-                showView('dashboard-view');
-            } else {
-                document.getElementById('admin-error').style.display = 'block';
-            }
-        }
-
-        function generateUniqueCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Ohne O,0,I,1 wegen Verwechslung
-            let code = '';
-            for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-            return padDatabase[code] ? generateUniqueCode() : code; 
-        }
-
-        function createProject() {
-            const name = document.getElementById('new-name').value;
-            const date = document.getElementById('new-date').value;
-            const status = document.getElementById('new-status').value;
-
-            if (!name || !date) {
-                alert('Systemfehler: Name und Datum sind Pflichtfelder.');
-                return;
-            }
-
-            const code = generateUniqueCode();
-            
-            padDatabase[code] = {
-                name: name,
-                date: date,
-                status: parseInt(status)
-            };
-            
-            saveDB();
-            
-            // UI Reset
-            document.getElementById('new-name').value = '';
-            document.getElementById('new-date').value = '';
-            document.getElementById('new-status').value = '1';
-            
-            updateAdminTable();
-            alert(`PROJEKT INITIALISIERT.\n\nDer Zugangscode für den Kunden lautet:\n\n >>> ${code} <<<`);
-        }
-
-        function changeProjectStatus(code, newStatus) {
-            if(padDatabase[code]) {
-                padDatabase[code].status = parseInt(newStatus);
-                saveDB();
-                // Optional: Kurzes visuelles Feedback in der UI
-            }
-        }
-
-        function deleteProject(code) {
-            if(confirm(`Sicherheitsabfrage: Projekt ${code} unwiderruflich löschen?`)) {
-                delete padDatabase[code];
-                saveDB();
-                updateAdminTable();
-            }
-        }
-
-        function saveDB() {
-            localStorage.setItem('pad_db_v2', JSON.stringify(padDatabase));
-        }
-
-        function logout() {
-            showView('login-view');
-        }
-
-        function updateAdminTable() {
-            const tbody = document.getElementById('projects-body');
-            const emptyState = document.getElementById('empty-state');
-            tbody.innerHTML = '';
-            
-            const keys = Object.keys(padDatabase);
-            
-            if (keys.length === 0) {
-                emptyState.style.display = 'block';
-                document.getElementById('projects-table').style.display = 'none';
-                return;
-            }
-            
-            emptyState.style.display = 'none';
-            document.getElementById('projects-table').style.display = 'table';
-
-            // Neueste (bzw. alphabetisch) sortieren
-            keys.sort().forEach(code => {
-                const data = padDatabase[code];
-                const tr = document.createElement('tr');
-                
-                // Datum formatieren
-                const d = data.date.split('-');
-                const formattedDate = `${d[2]}.${d[1]}.${d[0]}`;
-
-                tr.innerHTML = `
-                    <td><span class="code-badge">${code}</span></td>
-                    <td style="font-weight: 600; color: #fff;">${data.name}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                        <select class="status-select" onchange="changeProjectStatus('${code}', this.value)">
-                            <option value="1" ${data.status === 1 ? 'selected' : ''}>I. Konzeption</option>
-                            <option value="2" ${data.status === 2 ? 'selected' : ''}>II. ENTWICKLUNG</option>
-                            <option value="3" ${data.status === 3 ? 'selected' : ''}>III. PRODUKTION</option>
-                            <option value="4" ${data.status === 4 ? 'selected' : ''}>IV. Begleitung</option>
-                        </select>
-                    </td>
-                    <td style="text-align: right;">
-                        <button class="btn-small" onclick="deleteProject('${code}')">LÖSCHEN</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
     </script>
 </body>
 </html>
