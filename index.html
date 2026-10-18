@@ -1,181 +1,989 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="h-full dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Turbo Brute-Force Lab</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background-color: #05070c; color: #f3f4f6; font-family: ui-sans-serif, system-ui, sans-serif; }
-    .glass { background: rgba(13, 17, 28, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
-  </style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-xl glass rounded-2xl p-6 md:p-8 shadow-2xl">
-    
-    <div class="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
-      <div>
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
-          Turbo Engine
-        </h1>
-        <p class="text-xs text-cyan-400 font-mono mt-1">Multi-Core Parallel Processor</p>
-      </div>
-      <div id="badge" class="bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs font-mono px-3 py-1 rounded-full">
-        Cores Loading...
-      </div>
-    </div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hide & Seek Cyber Radar</title>
 
-    <div class="space-y-4">
-      <div>
-        <label class="block text-xs font-medium text-gray-400 mb-1">Ziel-Passwort</label>
-        <input type="text" id="target" value="987654" 
-          class="w-full bg-black/60 border border-gray-800 rounded-xl px-4 py-3 text-lg font-mono text-cyan-400 focus:outline-none focus:border-cyan-500">
-      </div>
-
-      <div class="flex gap-2 text-xs">
-        <button onclick="setVal('7421')" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg">4-Digits</button>
-        <button onclick="setVal('987654')" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg">6-Digits</button>
-        <button onclick="setVal('12345678')" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg">8-Digits</button>
-      </div>
-
-      <button id="btn" onclick="toggle()" 
-        class="w-full bg-cyan-600 hover:bg-cyan-500 font-semibold py-3.5 rounded-xl shadow-lg shadow-cyan-950 transition active:scale-[0.99] mt-2">
-        Turbo Starten
-      </button>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3 mt-6">
-      <div class="bg-black/50 border border-gray-800 rounded-xl p-3 text-center">
-        <span class="text-[10px] uppercase text-gray-500 block">Durchsatz</span>
-        <span id="speed" class="text-xl md:text-2xl font-mono font-bold text-cyan-400">0 /s</span>
-      </div>
-      <div class="bg-black/50 border border-gray-800 rounded-xl p-3 text-center">
-        <span class="text-[10px] uppercase text-gray-500 block">Zeit</span>
-        <span id="time" class="text-xl md:text-2xl font-mono font-bold text-gray-200">0.00s</span>
-      </div>
-    </div>
-
-    <div class="bg-black/50 border border-gray-800 rounded-xl p-4 mt-3 text-center">
-      <span class="text-[10px] uppercase text-gray-500 block mb-1">Gesamtversuche</span>
-      <span id="attempts" class="text-2xl md:text-3xl font-mono font-bold text-white">0</span>
-    </div>
-
-    <div id="status" class="mt-4 bg-black/60 border border-gray-800 rounded-xl p-4 text-center font-mono text-sm text-gray-400">
-      Bereit
-    </div>
-  </div>
-
-  <script>
-    let workers = [], isRunning = false, startTime = 0, totalAttempts = 0, timer = null;
-    const cores = navigator.hardwareConcurrency || 4;
-    document.getElementById('badge').innerText = `${cores} Kerne aktiv`;
-
-    // High-Performance Worker Code (Inline via Blob)
-    const workerCode = `
-      self.onmessage = function(e) {
-        const { target, charset, startIndex, stride, batchSize } = e.data;
-        const charsetLen = charset.length;
-        const targetLen = target.length;
-        let currentIndex = startIndex;
-
-        const charsetChars = charset.split('');
-
-        function getCandidate(idx, len) {
-          let str = '';
-          let temp = idx;
-          for (let i = 0; i < len; i++) {
-            str = charsetChars[temp % charsetLen] + str;
-            temp = Math.floor(temp / charsetLen);
-          }
-          return str;
-        }
-
-        function runBatch() {
-          let count = 0;
-          while (count < batchSize) {
-            const candidate = getCandidate(currentIndex, targetLen);
-            count++;
-            if (candidate === target) {
-              self.postMessage({ type: 'FOUND', candidate, count });
-              return;
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#040810',
+                            panel: 'rgba(10, 18, 32, 0.90)',
+                            border: 'rgba(0, 255, 170, 0.25)',
+                            green: '#00ffaa',
+                            cyan: '#00e5ff',
+                            red: '#ff0055',
+                            yellow: '#ffcc00'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Monaco', 'monospace'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
             }
-            currentIndex += stride;
-          }
-          self.postMessage({ type: 'PROGRESS', count });
-          setTimeout(runBatch, 0);
         }
-        runBatch();
-      };
-    `;
+    </script>
 
-    const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
-    const workerUrl = URL.createObjectURL(workerBlob);
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-    function setVal(v) { if(!isRunning) document.getElementById('target').value = v; }
+    <!-- QRCode.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    function getCharset(t) {
-      return "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*";
-    }
+    <!-- PeerJS CDN (WebRTC direct multi-device synchronization) -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
-    function toggle() {
-      if (isRunning) stop();
-      else start();
-    }
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    function start() {
-      const target = document.getElementById('target').value;
-      if (!target) return;
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-      const charset = getCharset(target);
-      isRunning = true;
-      totalAttempts = 0;
-      startTime = performance.now();
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #040810;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
 
-      document.getElementById('btn').innerText = "Stoppen";
-      document.getElementById('btn').className = "w-full bg-red-600 hover:bg-red-500 font-semibold py-3.5 rounded-xl shadow-lg transition active:scale-[0.99] mt-2";
-      document.getElementById('status').innerText = "Suche läuft mit voller Leistung...";
-      document.getElementById('status').className = "mt-4 bg-black/60 border border-gray-800 rounded-xl p-4 text-center font-mono text-sm text-cyan-400 animate-pulse";
+        /* Glassmorphism Panels */
+        .cyber-panel {
+            background: rgba(10, 18, 32, 0.90);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 255, 170, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
+        }
 
-      timer = setInterval(update, 100);
-      workers = [];
+        /* Leaflet Dark Map Customization */
+        .leaflet-container {
+            background: #020408 !important;
+            font-family: inherit;
+            width: 100%;
+            height: 100%;
+        }
+        .leaflet-tile {
+            filter: brightness(0.4) invert(1) contrast(2.2) hue-rotate(180deg) saturate(0.3);
+        }
+        .leaflet-control-zoom {
+            border: 1px solid rgba(0, 255, 170, 0.3) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+        .leaflet-control-zoom-in, .leaflet-control-zoom-out {
+            background: #0a1220 !important;
+            color: #00ffaa !important;
+            border-bottom: 1px solid rgba(0, 255, 170, 0.2) !important;
+        }
 
-      const batchSize = 1000000; // 1 Million pro Schleifendurchlauf
+        /* Radar Marker Pulse Animations */
+        .player-beacon-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            animation: pulse-ring-anim 2s infinite ease-out;
+        }
+        @keyframes pulse-ring-anim {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(3.2); opacity: 0; }
+        }
 
-      for (let i = 0; i < cores; i++) {
-        const w = new Worker(workerUrl);
-        w.onmessage = (e) => {
-          if (!isRunning) return;
-          if (e.data.type === 'PROGRESS') {
-            totalAttempts += e.data.count;
-          } else if (e.data.type === 'FOUND') {
-            totalAttempts += e.data.count;
-            stop();
-            document.getElementById('status').innerText = `Gefunden! Passwort: "${e.data.candidate}"`;
-            document.getElementById('status').className = "mt-4 bg-black/60 border border-cyan-800 rounded-xl p-4 text-center font-mono text-sm font-bold text-cyan-400";
-          }
+        /* Stealth Screen Overlay */
+        .stealth-overlay {
+            background: #000000;
+            color: #111;
+        }
+
+        /* Canvas Radar Overlay */
+        #radar-sweep-canvas {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 400;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(4, 8, 16, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 170, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 170, 0.6);
+        }
+    </style>
+</head>
+<body class="h-full w-full flex flex-col justify-between antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- TOP HEADER / STATUS BAR -->
+    <header class="cyber-panel shrink-0 z-50 border-b border-emerald-500/30 px-3 md:px-5 py-2.5 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-emerald-500/10 border border-emerald-400/40 flex items-center justify-center text-emerald-400 text-base md:text-lg shadow-[0_0_15px_rgba(0,255,170,0.3)] shrink-0">
+                <i class="fa-solid fa-radar animate-spin" style="animation-duration: 9s;"></i>
+            </div>
+            <div>
+                <h1 class="text-xs md:text-sm lg:text-base font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 uppercase font-mono">
+                    CYBER RADAR <span class="text-[9px] md:text-[10px] text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40">LIVE GPS</span>
+                </h1>
+                <p class="text-[10px] text-slate-400 font-mono flex items-center gap-2">
+                    <span>ROOM: <strong id="header-room-id" class="text-cyan-400">---</strong></span>
+                    <span class="text-slate-600">&bull;</span>
+                    <span id="p2p-status" class="text-amber-400"><i class="fa-solid fa-circle-notch animate-spin"></i> VERBINDE...</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Mode Switch Tabs -->
+        <div class="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 font-mono text-xs">
+            <button onclick="switchRole('host')" id="btn-tab-host" class="px-2.5 md:px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold">
+                <i class="fa-solid fa-desktop"></i> <span class="hidden sm:inline">Radar</span> Host
+            </button>
+            <button onclick="switchRole('player')" id="btn-tab-player" class="px-2.5 md:px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-mobile-screen-button"></i> <span class="hidden sm:inline">Handy</span> Player
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 w-full h-full relative overflow-hidden p-2 md:p-4">
+
+        <!-- ================= MODE 1: GAME HOST / RADAR MASTER ================= -->
+        <section id="role-host" class="w-full h-full grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4">
+            
+            <!-- Left Sidebar Controls -->
+            <div class="lg:col-span-4 h-full flex flex-col gap-3 md:gap-4 overflow-y-auto pr-0.5">
+                
+                <!-- QR Code Connection Card -->
+                <div class="cyber-panel rounded-2xl p-3.5 flex flex-col items-center relative shrink-0">
+                    <div class="w-full flex items-center justify-between mb-2 font-mono text-xs">
+                        <span class="text-emerald-400 font-bold uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-qrcode"></i> QR-Code Scannen
+                        </span>
+                        <button onclick="toggleQRModal(true)" class="text-[10px] text-cyan-400 hover:underline">
+                            <i class="fa-solid fa-expand"></i> Vergrößern
+                        </button>
+                    </div>
+
+                    <!-- QR Code Render Container -->
+                    <div class="bg-white p-2.5 rounded-xl border-2 border-emerald-400/50 shadow-xl shadow-emerald-950/60 my-1 relative group cursor-pointer" onclick="toggleQRModal(true)">
+                        <div id="qrcode-small"></div>
+                        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-emerald-400 font-mono text-xs font-bold rounded-lg">
+                            <i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Vergrößern
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-300 text-center font-mono mt-2 leading-relaxed">
+                        Scanne den Code mit deinem Handy, um als Verstecker beizutreten!
+                    </p>
+
+                    <button onclick="copyJoinLink()" class="w-full mt-2.5 py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300 font-mono text-xs transition flex items-center justify-center gap-1.5">
+                        <i class="fa-regular fa-copy"></i> Einladungs-Link Kopieren
+                    </button>
+                </div>
+
+                <!-- Radar Configuration Card -->
+                <div class="cyber-panel rounded-2xl p-3.5 font-mono text-xs flex flex-col gap-3 shrink-0">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-emerald-400 font-bold uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> Einstellungen
+                        </span>
+                        <span class="text-[10px] text-slate-500">LIVE</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-slate-400 block mb-1 text-[11px]">Geofence Radius</label>
+                            <select id="cfg-geofence" onchange="updateGeofenceRadius()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-emerald-300 focus:outline-none text-xs">
+                                <option value="100">100 Meter</option>
+                                <option value="250" selected>250 Meter</option>
+                                <option value="500">500 Meter</option>
+                                <option value="1000">1 km</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1 text-[11px]">Ping Signal Sound</label>
+                            <button onclick="toggleAudio()" id="btn-audio" class="w-full p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold flex items-center justify-center gap-1.5 text-xs">
+                                <i class="fa-solid fa-volume-high"></i> Sound AN
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Connected Players List -->
+                <div class="cyber-panel rounded-2xl p-3.5 flex-1 flex flex-col gap-3 min-h-[180px]">
+                    <div class="flex items-center justify-between font-mono text-xs border-b border-slate-800 pb-2 shrink-0">
+                        <span class="text-emerald-400 font-bold uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-users"></i> Aktive Radar Blips
+                        </span>
+                        <span id="player-count-badge" class="text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 text-[11px]">0 Online</span>
+                    </div>
+
+                    <div id="host-player-list" class="flex-1 space-y-2 font-mono text-xs overflow-y-auto pr-1">
+                        <div class="text-center text-slate-500 py-8 flex flex-col items-center gap-2">
+                            <i class="fa-solid fa-satellite text-2xl opacity-30"></i>
+                            <span>Warte auf echte Spieler... Scanne den QR-Code mit deinem Handy!</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Full Map View -->
+            <div class="lg:col-span-8 h-[60vh] lg:h-full cyber-panel rounded-2xl overflow-hidden relative border border-emerald-500/30 flex flex-col">
+                
+                <!-- Map Container -->
+                <div id="host-map" class="w-full h-full z-10"></div>
+
+                <!-- Canvas Sweep Overlay -->
+                <canvas id="radar-sweep-canvas"></canvas>
+
+                <!-- Floating Distance & Nearest Player Overlay -->
+                <div class="absolute top-3 right-3 z-20 cyber-panel p-2.5 md:p-3 rounded-xl border border-emerald-500/30 flex items-center gap-3 md:gap-4 font-mono text-xs backdrop-blur-md">
+                    <div>
+                        <div class="text-[9px] md:text-[10px] text-slate-400 uppercase">Nächster Verstecker</div>
+                        <div id="closest-player-dist" class="text-emerald-400 font-black text-xs md:text-sm">-- m</div>
+                    </div>
+                    <div class="h-6 w-px bg-slate-800"></div>
+                    <div>
+                        <div class="text-[9px] md:text-[10px] text-slate-400 uppercase">Standort Host</div>
+                        <div id="host-gps-status" class="text-cyan-400 font-bold flex items-center gap-1.5 text-xs">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> GPS AKTIV
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODE 2: MOBILE PLAYER / HIDER BEACON ================= -->
+        <section id="role-player" class="hidden h-full max-w-md mx-auto w-full flex flex-col justify-between py-2 overflow-y-auto gap-3">
+            
+            <!-- Mobile Identity Profile -->
+            <div class="cyber-panel rounded-2xl p-4 font-mono text-xs flex flex-col gap-3 shrink-0">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span class="text-emerald-400 font-bold uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-ninja"></i> Spieler Profil
+                    </span>
+                    <span id="mobile-gps-badge" class="text-emerald-400 text-[10px] bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40">
+                        <i class="fa-solid fa-location-crosshairs"></i> GPS SUCHE...
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-slate-400 block mb-1">Codename</label>
+                        <input type="text" id="player-name" value="Ghost-1" onchange="savePlayerProfile()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400">
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1">Rolle</label>
+                        <select id="player-role" onchange="savePlayerProfile()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-emerald-300 font-bold focus:outline-none">
+                            <option value="hider">🟢 Verstecker (Hider)</option>
+                            <option value="seeker">🔴 Sucher (Seeker)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Big Interactive Pulse Signal Card -->
+            <div class="cyber-panel rounded-3xl p-5 flex flex-col items-center justify-center gap-4 text-center my-auto">
+                
+                <!-- Distance / Proximity Hot-Cold Bar -->
+                <div id="proximity-meter" class="w-full py-2.5 px-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs flex items-center justify-between">
+                    <span class="text-slate-400">DISTANZ ZUM HOST:</span>
+                    <span id="host-distance-text" class="text-cyan-400 font-bold">Berechne...</span>
+                </div>
+
+                <!-- HUGE PULSE TRIGGER BUTTON -->
+                <button onclick="triggerManualPulse()" id="btn-pulse" class="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 hover:from-emerald-500 hover:to-cyan-300 border-4 border-emerald-300/80 shadow-[0_0_50px_rgba(0,255,170,0.4)] active:scale-95 transition-all flex flex-col items-center justify-center gap-1 text-slate-950 my-1 cursor-pointer">
+                    <i class="fa-solid fa-satellite-dish text-4xl sm:text-5xl mb-1 animate-pulse"></i>
+                    <span class="font-black font-mono text-base sm:text-lg tracking-wider uppercase">PING SENDEN</span>
+                    <span class="text-[10px] font-mono opacity-90 font-bold">STANDORT ABGEBEN</span>
+                </button>
+
+                <div class="text-xs font-mono text-slate-400 flex items-center gap-2">
+                    <span>Letzter Ping:</span>
+                    <span id="last-ping-time" class="text-emerald-400 font-bold">Nie</span>
+                </div>
+            </div>
+
+            <!-- Mobile Controls & Stealth Toggle -->
+            <div class="cyber-panel rounded-2xl p-4 font-mono text-xs flex flex-col gap-3 shrink-0">
+                <div class="flex items-center justify-between">
+                    <span><i class="fa-solid fa-eye-slash mr-1.5 text-emerald-400"></i> Tarnmodus (Display Schwarz)</span>
+                    <button onclick="toggleStealthMode()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold">
+                        Aktivieren
+                    </button>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                    <span>Automatischer Intervall-Ping</span>
+                    <button onclick="toggleAutoPing()" id="btn-autoping" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold">
+                        AN (10s)
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- LARGE DISPLAY QR CODE MODAL -->
+    <div id="qr-modal" class="fixed inset-0 z-[200] bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="cyber-panel rounded-3xl p-6 md:p-8 max-w-sm w-full flex flex-col items-center gap-4 border-2 border-emerald-400/50 relative shadow-2xl">
+            <button onclick="toggleQRModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-base font-black font-mono text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-qrcode"></i> QR-Code Scannen
+            </h3>
+
+            <!-- Render Target for Large QR -->
+            <div class="bg-white p-4 rounded-2xl border-4 border-emerald-400/60 shadow-2xl my-2">
+                <div id="qrcode-large"></div>
+            </div>
+
+            <ol class="text-left text-xs font-mono text-slate-300 space-y-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800 w-full">
+                <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold">1.</span>
+                    <span>Kamera-App auf dem Handy öffnen und QR-Code scannen.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold">2.</span>
+                    <span>GPS-Freigabe im Browser auf dem Smartphone erlauben.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold">3.</span>
+                    <span>"PING SENDEN" antippen, um live auf dem Radar zu erscheinen!</span>
+                </li>
+            </ol>
+
+            <button onclick="copyJoinLink()" class="w-full py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 rounded-xl text-emerald-300 font-mono text-xs font-bold transition flex items-center justify-center gap-2">
+                <i class="fa-regular fa-copy"></i> Direktlink kopieren
+            </button>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN STEALTH / BATTERY SAVER OVERLAY -->
+    <div id="stealth-screen" onclick="toggleStealthMode()" class="fixed inset-0 z-[300] stealth-overlay hidden flex flex-col items-center justify-center p-6 text-center cursor-pointer">
+        <i class="fa-solid fa-eye-slash text-6xl mb-4 opacity-20 text-emerald-400"></i>
+        <p class="font-mono text-xs opacity-40 text-emerald-400 tracking-widest">TARNMODUS AKTIV &bull; DISPLAY ABGEDUNKELT</p>
+        <p class="font-mono text-[10px] opacity-20 text-slate-400 mt-2">Tippe irgendwo auf den Bildschirm zum Beenden</p>
+    </div>
+
+    <!-- APPLICATION LOGIC & REAL-TIME WEBRTC ENGINE -->
+    <script>
+        /* ==================== GLOBAL STATE ==================== */
+        const urlParams = new URLSearchParams(window.location.search);
+        let roomId = urlParams.get('room') || 'RADAR-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+        let currentRole = urlParams.get('role') || 'host';
+
+        let appState = {
+            audioEnabled: true,
+            geofenceRadiusMeters: 250,
+            hostPos: { lat: 52.5200, lng: 13.4050 }, // Initial default center until real GPS triggers
+            players: {}, // Stores: [id]: { id, name, role, lat, lng, speed, lastPing }
+            playerId: 'p_' + Math.random().toString(36).substr(2, 6),
+            autoPingActive: true,
+            autoPingTimer: null
         };
-        w.postMessage({ target, charset, startIndex: i, stride: cores, batchSize });
-        workers.push(w);
-      }
-    }
 
-    function stop() {
-      isRunning = false;
-      workers.forEach(w => w.terminate());
-      workers = [];
-      clearInterval(timer);
-      document.getElementById('btn').innerText = "Turbo Starten";
-      document.getElementById('btn').className = "w-full bg-cyan-600 hover:bg-cyan-500 font-semibold py-3.5 rounded-xl shadow-lg shadow-cyan-950 transition active:scale-[0.99] mt-2";
-    }
+        // WebRTC Connections
+        let peer = null;
+        let activePeerConnections = [];
 
-    function update() {
-      const sec = (performance.now() - startTime) / 1000;
-      const rps = sec > 0 ? Math.round(totalAttempts / sec) : 0;
-      document.getElementById('speed').innerText = (rps >= 1e6 ? (rps/1e6).toFixed(2) + ' Mio.' : rps.toLocaleString()) + ' /s';
-      document.getElementById('time').innerText = sec.toFixed(2) + 's';
-      document.getElementById('attempts').innerText = totalAttempts.toLocaleString();
-    }
-  </script>
+        // Leaflet & UI Controls
+        let hostMap, hostMarker, geofenceCircle;
+        let mapMarkers = {};
+        let sweepCanvas, sweepCtx, sweepAngle = 0;
+        let audioCtx = null;
+
+        /* ==================== APP INITIALIZATION ==================== */
+        window.onload = function() {
+            document.getElementById('header-room-id').innerText = roomId;
+            
+            initHostMap();
+            initQRGenerators();
+            initRadarSweepCanvas();
+            initGPSWatcher();
+            initPeerJSConnection();
+
+            // Set role UI based on URL
+            switchRole(currentRole);
+
+            // Restore saved player profile name
+            const savedName = localStorage.getItem('radar_player_name');
+            if (savedName) document.getElementById('player-name').value = savedName;
+
+            // Auto Ping Interval
+            appState.autoPingTimer = setInterval(() => {
+                if (appState.autoPingActive && currentRole === 'player') {
+                    triggerManualPulse();
+                }
+            }, 10000);
+        };
+
+        /* ==================== WEBRTC & PEERJS ENGINE ==================== */
+        function initPeerJSConnection() {
+            const peerStatusEl = document.getElementById('p2p-status');
+            
+            // Host receives Room ID as Peer ID, Players receive random client ID
+            const myPeerId = currentRole === 'host' ? roomId : 'player_' + appState.playerId;
+
+            peer = new Peer(myPeerId, { debug: 1 });
+
+            peer.on('open', (id) => {
+                peerStatusEl.className = "text-emerald-400 font-bold";
+                peerStatusEl.innerHTML = `<i class="fa-solid fa-wifi"></i> P2P BEREIT`;
+
+                if (currentRole === 'player') {
+                    connectToHostPeer();
+                }
+            });
+
+            // Host handles incoming player connections
+            peer.on('connection', (conn) => {
+                activePeerConnections.push(conn);
+                
+                conn.on('data', (data) => {
+                    if (data && data.type === 'PLAYER_PULSE') {
+                        handleIncomingPlayerPulse(data.payload);
+                    }
+                });
+
+                conn.on('close', () => {
+                    activePeerConnections = activePeerConnections.filter(c => c !== conn);
+                });
+            });
+
+            peer.on('error', (err) => {
+                console.warn("PeerJS connection state:", err);
+                peerStatusEl.className = "text-amber-400 font-bold";
+                peerStatusEl.innerHTML = `<i class="fa-solid fa-satellite"></i> P2P LOKAL`;
+            });
+        }
+
+        function connectToHostPeer() {
+            if (!peer || peer.destroyed) return;
+
+            const conn = peer.connect(roomId);
+            
+            conn.on('open', () => {
+                activePeerConnections = [conn];
+                document.getElementById('p2p-status').className = "text-emerald-400 font-bold";
+                document.getElementById('p2p-status').innerHTML = `<i class="fa-solid fa-link"></i> HOST VERBUNDEN`;
+                
+                triggerManualPulse();
+            });
+
+            conn.on('error', (err) => {
+                console.warn("Connection to host pending/failed:", err);
+            });
+        }
+
+        function sendDataToPeers(type, payload) {
+            // Send via WebRTC
+            activePeerConnections.forEach(conn => {
+                if (conn.open) {
+                    conn.send({ type, payload });
+                }
+            });
+
+            // Local BroadcastChannel fallback for multi-tab testing
+            try {
+                const bc = new BroadcastChannel('cyber_radar_channel_' + roomId);
+                bc.postMessage({ type, payload });
+                bc.close();
+            } catch(e){}
+        }
+
+        // Listen for same-device multi-tab BroadcastChannel messages
+        const localChannel = new BroadcastChannel('cyber_radar_channel_' + roomId);
+        localChannel.onmessage = (event) => {
+            if (event.data && event.data.type === 'PLAYER_PULSE') {
+                handleIncomingPlayerPulse(event.data.payload);
+            }
+        };
+
+        /* ==================== LEAFLET MAP ENGINE ==================== */
+        function initHostMap() {
+            hostMap = L.map('host-map', {
+                center: [appState.hostPos.lat, appState.hostPos.lng],
+                zoom: 17,
+                zoomControl: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: 'OpenStreetMap'
+            }).addTo(hostMap);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(hostMap);
+
+            // Host Base Marker Icon
+            const hostIcon = L.divIcon({
+                className: 'player-beacon-marker',
+                html: `<div class="relative w-7 h-7 bg-amber-400 rounded-full border-2 border-slate-950 flex items-center justify-center shadow-[0_0_20px_#ffcc00]">
+                        <div class="pulse-ring bg-amber-400 opacity-60"></div>
+                        <i class="fa-solid fa-crown text-xs text-slate-950"></i>
+                       </div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            hostMarker = L.marker([appState.hostPos.lat, appState.hostPos.lng], { icon: hostIcon }).addTo(hostMap);
+
+            // Geofence Circle
+            geofenceCircle = L.circle([appState.hostPos.lat, appState.hostPos.lng], {
+                color: '#00ffaa',
+                fillColor: '#00ffaa',
+                fillOpacity: 0.05,
+                radius: appState.geofenceRadiusMeters,
+                dashArray: '6, 6'
+            }).addTo(hostMap);
+        }
+
+        function updateGeofenceRadius() {
+            const radius = parseInt(document.getElementById('cfg-geofence').value);
+            appState.geofenceRadiusMeters = radius;
+            if (geofenceCircle) {
+                geofenceCircle.setRadius(radius);
+            }
+        }
+
+        /* ==================== INCOMING PLAYER PULSE PROCESSING ==================== */
+        function handleIncomingPlayerPulse(playerData) {
+            appState.players[playerData.id] = playerData;
+
+            // Audio Ping Sound
+            playPingSound(playerData.role === 'seeker' ? 350 : 750);
+
+            // Update Marker on Map
+            updatePlayerMapMarker(playerData);
+
+            // Update UI Player List
+            renderHostPlayerList();
+
+            // Recalculate Distance
+            calculateClosestPlayerDistance();
+        }
+
+        function updatePlayerMapMarker(player) {
+            const isSeeker = player.role === 'seeker';
+            const colorClass = isSeeker ? 'bg-red-500' : 'bg-emerald-400';
+            const pulseColor = isSeeker ? 'bg-red-500' : 'bg-emerald-400';
+            const shadowColor = isSeeker ? '#ff0055' : '#00ffaa';
+
+            const customIcon = L.divIcon({
+                className: 'player-beacon-marker',
+                html: `<div class="relative w-8 h-8 ${colorClass} rounded-full border-2 border-slate-950 flex items-center justify-center shadow-[0_0_20px_${shadowColor}]">
+                        <div class="pulse-ring ${pulseColor}"></div>
+                        <span class="text-[10px] font-mono font-black text-slate-950 uppercase">${player.name.substring(0,2)}</span>
+                       </div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            if (mapMarkers[player.id]) {
+                mapMarkers[player.id].setLatLng([player.lat, player.lng]);
+                mapMarkers[player.id].setIcon(customIcon);
+            } else {
+                mapMarkers[player.id] = L.marker([player.lat, player.lng], { icon: customIcon }).addTo(hostMap);
+            }
+        }
+
+        function renderHostPlayerList() {
+            const listEl = document.getElementById('host-player-list');
+            const playersArr = Object.values(appState.players);
+
+            document.getElementById('player-count-badge').innerText = `${playersArr.length} Online`;
+
+            if (playersArr.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center text-slate-500 py-8 flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-satellite text-2xl opacity-30"></i>
+                        <span>Warte auf echte Spieler... Scanne den QR-Code mit deinem Handy!</span>
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = playersArr.map(p => {
+                const dist = calculateDistance(appState.hostPos.lat, appState.hostPos.lng, p.lat, p.lng);
+                const isSeeker = p.role === 'seeker';
+                const roleBadge = isSeeker 
+                    ? `<span class="text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-500/40 font-bold">SUCHER</span>` 
+                    : `<span class="text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40 font-bold">VERSTECKER</span>`;
+
+                return `
+                    <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-3 h-3 rounded-full ${isSeeker ? 'bg-red-500' : 'bg-emerald-400'} animate-pulse"></span>
+                            <div>
+                                <div class="font-bold text-slate-200">${p.name}</div>
+                                <div class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+                                    ${roleBadge} &bull; <strong class="text-cyan-300">${Math.round(dist)} m</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right text-[10px] text-slate-400 font-mono">
+                            <div>${new Date(p.lastPing).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</div>
+                            <div class="text-emerald-400 font-bold">${p.speed ? Math.round(p.speed) : 0} km/h</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function calculateClosestPlayerDistance() {
+            const playersArr = Object.values(appState.players);
+            if (playersArr.length === 0) {
+                document.getElementById('closest-player-dist').innerText = `-- m`;
+                return;
+            }
+
+            let minDist = Infinity;
+            playersArr.forEach(p => {
+                const d = calculateDistance(appState.hostPos.lat, appState.hostPos.lng, p.lat, p.lng);
+                if (d < minDist) minDist = d;
+            });
+
+            document.getElementById('closest-player-dist').innerText = `${Math.round(minDist)} m`;
+        }
+
+        /* ==================== GPS REAL-TIME GEOLOCATION WATCHER ==================== */
+        function initGPSWatcher() {
+            if ("geolocation" in navigator) {
+                
+                // First attempt immediate high-accuracy fix for map auto-center
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        appState.hostPos = { lat, lng };
+                        if (hostMap) hostMap.setView([lat, lng], 17);
+                        if (hostMarker) hostMarker.setLatLng([lat, lng]);
+                        if (geofenceCircle) geofenceCircle.setLatLng([lat, lng]);
+
+                        document.getElementById('host-gps-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> ECHTER STANDORT`;
+                    },
+                    (err) => {
+                        console.warn("Initial GPS position failed, waiting for watchPosition...", err);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+
+                // Continuous Watcher
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const speed = position.coords.speed ? position.coords.speed * 3.6 : 0;
+
+                        if (currentRole === 'host') {
+                            appState.hostPos = { lat, lng };
+                            if (hostMarker) hostMarker.setLatLng([lat, lng]);
+                            if (geofenceCircle) geofenceCircle.setLatLng([lat, lng]);
+                        } else {
+                            // Player Mode Update
+                            appState.currentLat = lat;
+                            appState.currentLng = lng;
+                            appState.currentSpeed = speed;
+                            
+                            const badge = document.getElementById('mobile-gps-badge');
+                            badge.className = "text-emerald-400 text-[10px] bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 font-bold";
+                            badge.innerHTML = `<i class="fa-solid fa-location-dot"></i> GPS AKTIV (±${Math.round(position.coords.accuracy)}m)`;
+
+                            // Calculate Proximity to Host
+                            const distToHost = calculateDistance(lat, lng, appState.hostPos.lat, appState.hostPos.lng);
+                            updateProximityMeter(distToHost);
+                        }
+                    },
+                    (error) => {
+                        console.warn("GPS Watch Notice:", error.message);
+                        if (currentRole === 'player') {
+                            const badge = document.getElementById('mobile-gps-badge');
+                            badge.className = "text-amber-400 text-[10px] bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/40 font-bold";
+                            badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> GPS RECHTE ERFORDERLICH`;
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            }
+        }
+
+        function triggerManualPulse() {
+            const name = document.getElementById('player-name').value || 'Agent-X';
+            const role = document.getElementById('player-role').value;
+
+            if (!appState.currentLat) {
+                // If device hasn't received GPS coordinates yet, fallback nearby host
+                appState.currentLat = appState.hostPos.lat;
+                appState.currentLng = appState.hostPos.lng;
+            }
+
+            const payload = {
+                id: appState.playerId,
+                name: name,
+                role: role,
+                lat: appState.currentLat,
+                lng: appState.currentLng,
+                speed: appState.currentSpeed || 0,
+                lastPing: Date.now()
+            };
+
+            sendDataToPeers('PLAYER_PULSE', payload);
+
+            // Update mobile timestamp
+            document.getElementById('last-ping-time').innerText = new Date().toLocaleTimeString();
+
+            // Button Feedback Animation
+            const btn = document.getElementById('btn-pulse');
+            btn.classList.add('scale-105');
+            setTimeout(() => btn.classList.remove('scale-105'), 150);
+
+            // Device Vibration
+            if ("vibrate" in navigator) {
+                navigator.vibrate([100, 50, 100]);
+            }
+
+            playPingSound(850);
+        }
+
+        /* ==================== RADAR CANVAS SWEEP ANIMATION ==================== */
+        function initRadarSweepCanvas() {
+            sweepCanvas = document.getElementById('radar-sweep-canvas');
+            const container = sweepCanvas.parentElement;
+            sweepCanvas.width = container.clientWidth;
+            sweepCanvas.height = container.clientHeight;
+            sweepCtx = sweepCanvas.getContext('2d');
+
+            window.addEventListener('resize', () => {
+                if (sweepCanvas && sweepCanvas.parentElement) {
+                    sweepCanvas.width = sweepCanvas.parentElement.clientWidth;
+                    sweepCanvas.height = sweepCanvas.parentElement.clientHeight;
+                }
+            });
+
+            requestAnimationFrame(animateSweep);
+        }
+
+        function animateSweep() {
+            if (!sweepCtx || currentRole !== 'host') {
+                requestAnimationFrame(animateSweep);
+                return;
+            }
+
+            const w = sweepCanvas.width;
+            const h = sweepCanvas.height;
+            const cX = w / 2;
+            const cY = h / 2;
+            const radius = Math.max(w, h);
+
+            sweepCtx.clearRect(0, 0, w, h);
+
+            // Rotate sweep sector line
+            sweepAngle += 0.02;
+            if (sweepAngle > Math.PI * 2) sweepAngle = 0;
+
+            sweepCtx.save();
+            sweepCtx.beginPath();
+            sweepCtx.moveTo(cX, cY);
+            sweepCtx.arc(cX, cY, radius, sweepAngle, sweepAngle + 0.3);
+            sweepCtx.closePath();
+
+            const gradient = sweepCtx.createRadialGradient(cX, cY, 10, cX, cY, radius);
+            gradient.addColorStop(0, 'rgba(0, 255, 170, 0.22)');
+            gradient.addColorStop(1, 'rgba(0, 255, 170, 0.0)');
+
+            sweepCtx.fillStyle = gradient;
+            sweepCtx.fill();
+            sweepCtx.restore();
+
+            requestAnimationFrame(animateSweep);
+        }
+
+        /* ==================== AUTOMATIC QR CODE BUILDER ==================== */
+        function initQRGenerators() {
+            // Automatically uses GitHub Pages full domain URL
+            const currentUrl = window.location.origin + window.location.pathname;
+            const fullJoinUrl = `${currentUrl}?role=player&room=${roomId}`;
+
+            // Small Panel QR
+            document.getElementById('qrcode-small').innerHTML = "";
+            new QRCode(document.getElementById("qrcode-small"), {
+                text: fullJoinUrl,
+                width: 120,
+                height: 120,
+                colorDark : "#040810",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // Large Modal QR
+            document.getElementById('qrcode-large').innerHTML = "";
+            new QRCode(document.getElementById("qrcode-large"), {
+                text: fullJoinUrl,
+                width: 220,
+                height: 220,
+                colorDark : "#040810",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        function toggleQRModal(show) {
+            document.getElementById('qr-modal').classList.toggle('hidden', !show);
+        }
+
+        function switchRole(role) {
+            currentRole = role;
+            document.getElementById('role-host').classList.toggle('hidden', role !== 'host');
+            document.getElementById('role-player').classList.toggle('hidden', role !== 'player');
+
+            document.getElementById('btn-tab-host').className = role === 'host' 
+                ? "px-2.5 md:px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
+                : "px-2.5 md:px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200";
+
+            document.getElementById('btn-tab-player').className = role === 'player'
+                ? "px-2.5 md:px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
+                : "px-2.5 md:px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200";
+
+            if (role === 'host' && hostMap) {
+                setTimeout(() => hostMap.invalidateSize(), 150);
+            }
+        }
+
+        function toggleStealthMode() {
+            document.getElementById('stealth-screen').classList.toggle('hidden');
+        }
+
+        function toggleAutoPing() {
+            appState.autoPingActive = !appState.autoPingActive;
+            const btn = document.getElementById('btn-autoping');
+
+            if (appState.autoPingActive) {
+                btn.className = "px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold";
+                btn.innerText = "AN (10s)";
+            } else {
+                btn.className = "px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400";
+                btn.innerText = "AUS";
+            }
+        }
+
+        function savePlayerProfile() {
+            const name = document.getElementById('player-name').value;
+            localStorage.setItem('radar_player_name', name);
+        }
+
+        function updateProximityMeter(distMeters) {
+            const el = document.getElementById('host-distance-text');
+            const dist = Math.round(distMeters);
+
+            if (dist < 25) {
+                el.className = "text-red-500 font-black animate-pulse";
+                el.innerText = `${dist}m (BRENNEND HEISS!)`;
+            } else if (dist < 80) {
+                el.className = "text-amber-400 font-bold";
+                el.innerText = `${dist}m (HEISS)`;
+            } else if (dist < 200) {
+                el.className = "text-cyan-400 font-bold";
+                el.innerText = `${dist}m (WARM)`;
+            } else {
+                el.className = "text-blue-400 font-bold";
+                el.innerText = `${dist}m (KALT)`;
+            }
+        }
+
+        /* ==================== ACOUSTIC RADAR AUDIO PINGS ==================== */
+        function playPingSound(freq = 700) {
+            if (!appState.audioEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq / 2, audioCtx.currentTime + 0.18);
+
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.18);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.18);
+            } catch (e) {}
+        }
+
+        function toggleAudio() {
+            appState.audioEnabled = !appState.audioEnabled;
+            const btn = document.getElementById('btn-audio');
+            btn.innerHTML = appState.audioEnabled 
+                ? `<i class="fa-solid fa-volume-high"></i> Sound AN` 
+                : `<i class="fa-solid fa-volume-xmark"></i> Sound AUS`;
+            btn.className = appState.audioEnabled 
+                ? "w-full p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold flex items-center justify-center gap-1.5 text-xs"
+                : "w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-bold flex items-center justify-center gap-1.5 text-xs";
+        }
+
+        function copyJoinLink() {
+            const currentUrl = window.location.origin + window.location.pathname;
+            const fullJoinUrl = `${currentUrl}?role=player&room=${roomId}`;
+            
+            navigator.clipboard.writeText(fullJoinUrl);
+            alert('Einladungs-Link kopiert! Sende ihn per Messenger oder scanne den QR-Code.');
+        }
+
+        /* ==================== HAVERSINE DISTANCE MATH ==================== */
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+    </script>
 </body>
 </html>
