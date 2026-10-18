@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wasm Turbo Brute-Force Lab</title>
+  <title>Turbo Brute-Force Lab</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #05070c; color: #f3f4f6; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -17,18 +17,18 @@
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
           <span class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
-          Wasm Turbo Engine
+          Turbo Engine
         </h1>
-        <p class="text-xs text-cyan-400 font-mono mt-1">Native WebAssembly Core + Multi-Core</p>
+        <p class="text-xs text-cyan-400 font-mono mt-1">Multi-Core Parallel Processor</p>
       </div>
       <div id="badge" class="bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs font-mono px-3 py-1 rounded-full">
-        Loading Wasm...
+        Cores Loading...
       </div>
     </div>
 
     <div class="space-y-4">
       <div>
-        <label class="block text-xs font-medium text-gray-400 mb-1">Ziel-Passwort (Zahlen/Zeichen)</label>
+        <label class="block text-xs font-medium text-gray-400 mb-1">Ziel-Passwort</label>
         <input type="text" id="target" value="987654" 
           class="w-full bg-black/60 border border-gray-800 rounded-xl px-4 py-3 text-lg font-mono text-cyan-400 focus:outline-none focus:border-cyan-500">
       </div>
@@ -67,55 +67,56 @@
   </div>
 
   <script>
-    // Minimal optimiertes Wasm-Binary (Ein kleiner handgefertigter Wasm-Loop für maximale CPU-Rohleistung)
-    // Entspricht einem hocheffizienten Integer-Inkrementierer im linearen Speicher.
-    const wasmCode = new Uint8Array([
-      0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 
-      0x02, 0x7f, 0x7f, 0x01, 0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 
-      0x03, 0x72, 0x75, 0x6e, 0x00, 0x00, 0x0a, 0x1b, 0x01, 0x19, 0x00, 0x20, 
-      0x00, 0x20, 0x01, 0x6a, 0x20, 0x00, 0x0f, 0x0b
-    ]);
-
     let workers = [], isRunning = false, startTime = 0, totalAttempts = 0, timer = null;
     const cores = navigator.hardwareConcurrency || 4;
-    document.getElementById('badge').innerText = `${cores} Kerne (Wasm Ready)`;
+    document.getElementById('badge').innerText = `${cores} Kerne aktiv`;
 
-    // Worker Script mit direktem Wasm-Bootstrap
-    const workerBlob = new Blob([`
-      let wasmInstance = null;
-      WebAssembly.instantiate(${JSON.stringify(Array.from(wasmCode))}).then(res => {
-        wasmInstance = res.instance;
-        postMessage({type: 'READY'});
-      });
-
+    // High-Performance Worker Code (Inline via Blob)
+    const workerCode = `
       self.onmessage = function(e) {
-        if (!wasmInstance) return;
-        const { target, start, stride, batch } = e.data;
-        const run = wasmInstance.exports.run;
-        
-        let current = start;
-        const targetNum = parseInt(target, 10);
+        const { target, charset, startIndex, stride, batchSize } = e.data;
+        const charsetLen = charset.length;
+        const targetLen = target.length;
+        let currentIndex = startIndex;
 
-        function loop() {
+        const charsetChars = charset.split('');
+
+        function getCandidate(idx, len) {
+          let str = '';
+          let temp = idx;
+          for (let i = 0; i < len; i++) {
+            str = charsetChars[temp % charsetLen] + str;
+            temp = Math.floor(temp / charsetLen);
+          }
+          return str;
+        }
+
+        function runBatch() {
           let count = 0;
-          while (count < batch) {
-            if (current === targetNum) {
-              postMessage({type: 'FOUND', val: current.toString()});
+          while (count < batchSize) {
+            const candidate = getCandidate(currentIndex, targetLen);
+            count++;
+            if (candidate === target) {
+              self.postMessage({ type: 'FOUND', candidate, count });
               return;
             }
-            current += stride;
-            count++;
+            currentIndex += stride;
           }
-          postMessage({type: 'PROG', count});
-          setTimeout(loop, 0);
+          self.postMessage({ type: 'PROGRESS', count });
+          setTimeout(runBatch, 0);
         }
-        loop();
+        runBatch();
       };
-    `], { type: 'application/javascript' });
+    `;
 
+    const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(workerBlob);
 
     function setVal(v) { if(!isRunning) document.getElementById('target').value = v; }
+
+    function getCharset(t) {
+      return "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*";
+    }
 
     function toggle() {
       if (isRunning) stop();
@@ -126,35 +127,35 @@
       const target = document.getElementById('target').value;
       if (!target) return;
 
+      const charset = getCharset(target);
       isRunning = true;
       totalAttempts = 0;
       startTime = performance.now();
 
       document.getElementById('btn').innerText = "Stoppen";
       document.getElementById('btn').className = "w-full bg-red-600 hover:bg-red-500 font-semibold py-3.5 rounded-xl shadow-lg transition active:scale-[0.99] mt-2";
-      document.getElementById('status').innerText = "Wasm-Kerne feuerbereit...";
+      document.getElementById('status').innerText = "Suche läuft mit voller Leistung...";
       document.getElementById('status').className = "mt-4 bg-black/60 border border-gray-800 rounded-xl p-4 text-center font-mono text-sm text-cyan-400 animate-pulse";
 
       timer = setInterval(update, 100);
       workers = [];
 
+      const batchSize = 1000000; // 1 Million pro Schleifendurchlauf
+
       for (let i = 0; i < cores; i++) {
         const w = new Worker(workerUrl);
         w.onmessage = (e) => {
           if (!isRunning) return;
-          if (e.data.type === 'PROG') {
+          if (e.data.type === 'PROGRESS') {
             totalAttempts += e.data.count;
           } else if (e.data.type === 'FOUND') {
+            totalAttempts += e.data.count;
             stop();
-            document.getElementById('status').innerText = `Treffer! Wert: ${e.data.val}`;
+            document.getElementById('status').innerText = `Gefunden! Passwort: "${e.data.candidate}"`;
             document.getElementById('status').className = "mt-4 bg-black/60 border border-cyan-800 rounded-xl p-4 text-center font-mono text-sm font-bold text-cyan-400";
           }
         };
-        w.onmessageerror = () => {};
-        // Startparameter übergeben
-        setTimeout(() => {
-          w.postMessage({ target, start: i, stride: cores, batch: 2000000 });
-        }, 200);
+        w.postMessage({ target, charset, startIndex: i, stride: cores, batchSize });
         workers.push(w);
       }
     }
